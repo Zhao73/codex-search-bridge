@@ -9,6 +9,8 @@ const pairs = [
     resolve(root, "schemas/research-result.schema.json"),
     resolve(root, "plugins/codex-search-bridge/schemas/research-result.schema.json"),
   ],
+  [resolve(root, "assets/logo.svg"), resolve(root, "plugins/codex-search-bridge/assets/logo.svg")],
+  [resolve(root, "assets/logo.png"), resolve(root, "plugins/codex-search-bridge/assets/logo.png")],
 ];
 
 for (const [built, packaged] of pairs) {

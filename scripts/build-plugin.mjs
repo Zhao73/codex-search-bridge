@@ -10,6 +10,8 @@ const copies = [
     resolve(root, "schemas/research-result.schema.json"),
     resolve(pluginRoot, "schemas/research-result.schema.json"),
   ],
+  [resolve(root, "assets/logo.svg"), resolve(pluginRoot, "assets/logo.svg")],
+  [resolve(root, "assets/logo.png"), resolve(pluginRoot, "assets/logo.png")],
 ];
 
 for (const [source, destination] of copies) {

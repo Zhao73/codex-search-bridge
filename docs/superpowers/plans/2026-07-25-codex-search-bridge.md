@@ -492,31 +492,31 @@ git commit -m "docs: add cross-platform setup and security guide"
 - Modify: `README.zh-CN.md`
 - Test: `tests/assets.test.ts`
 
-- [ ] **Step 1: Load the required visual workflow skills**
+- [x] **Step 1: Load the required visual workflow skills**
 
 Read `design-taste-frontend` and `impeccable` completely enough to follow their routed visual-quality, accessibility, typography, and anti-template rules. Read `copywriting` before writing launch copy. Do not use OpenAI logos or imply official affiliation.
 
-- [ ] **Step 2: Define the visual direction**
+- [x] **Step 2: Define the visual direction**
 
 Use a restrained dark technical identity: near-black background, warm off-white text, one electric-cyan accent, monospaced evidence labels, and an architecture motif that visually connects external model → verified bridge → live web. Avoid generic purple AI gradients, glowing brain icons, fake dashboards, and illegible terminal screenshots.
 
-- [ ] **Step 3: Create responsive SVG hero and social card**
+- [x] **Step 3: Create responsive SVG hero and social card**
 
 The hero must remain legible at 640px width, include the project name, one-line value proposition, and an “Unofficial community project” marker. The 1200×630 card must preserve safe margins for social cropping and pass contrast checks.
 
-- [ ] **Step 4: Render and inspect the PNG**
+- [x] **Step 4: Render and inspect the PNG**
 
 Create `scripts/render-assets.mjs` using `sharp`, render `assets/social-card.svg` to an exact 1200×630 PNG, and strip variable timestamp metadata. Inspect the PNG at original resolution and verify text is not clipped, the community label is visible, and no copyrighted third-party logos appear.
 
-- [ ] **Step 5: Write truthful launch copy**
+- [x] **Step 5: Write truthful launch copy**
 
 English and Chinese posts must demonstrate: actual live search event, opened page evidence, publication/event date separation, source links, and unconfirmed labeling. Hacker News and Reddit versions lead with the technical mechanism and limitations, not hype. Every performance or compatibility statement must point to test evidence.
 
-- [ ] **Step 6: Add asset tests and README visuals**
+- [x] **Step 6: Add asset tests and README visuals**
 
 Assert SVG dimensions/viewBox, accessible `<title>`/`<desc>`, required community label, PNG dimensions, and absence of `OpenAI logo`/`official plugin` claims. Embed the SVG hero with useful alt text in both READMEs.
 
-- [ ] **Step 7: Run tests and commit**
+- [x] **Step 7: Run tests and commit**
 
 Run: `npm test -- tests/assets.test.ts && npm run check`
 

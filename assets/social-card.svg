@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Search Bridge social preview</title>
+  <desc id="desc">Launch card showing a tool-capable model connected to verified live-web search evidence.</desc>
+  <rect width="1200" height="630" fill="#07110F"/>
+
+  <g transform="translate(58 46)">
+    <rect width="28" height="34" rx="3" fill="#10201C" stroke="#F2F7F5" stroke-width="3"/>
+    <rect x="48" width="28" height="34" rx="3" fill="#10201C" stroke="#F2F7F5" stroke-width="3"/>
+    <path d="M14 17 H33 V9 H43 V17 H62" fill="none" stroke="#22D3C5" stroke-width="4"/>
+    <text x="98" y="24" fill="#F2F7F5" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" letter-spacing="0.8">CODEX SEARCH BRIDGE</text>
+  </g>
+
+  <g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="-1.8">
+    <text x="58" y="166" fill="#F2F7F5" font-size="62">LET ANY</text>
+    <text x="58" y="235" fill="#22D3C5" font-size="62">TOOL-CAPABLE MODEL</text>
+    <text x="58" y="304" fill="#F2F7F5" font-size="62">SEARCH THE LIVE WEB.</text>
+  </g>
+
+  <text x="62" y="362" fill="#9FB4AE" font-family="Arial, Helvetica, sans-serif" font-size="21">
+    SEARCH. OPEN SOURCES. CHECK DATES.
+  </text>
+  <text x="62" y="394" fill="#9FB4AE" font-family="Arial, Helvetica, sans-serif" font-size="21">
+    MARK WHAT IS UNCONFIRMED.
+  </text>
+
+  <g transform="translate(62 470)" font-family="Menlo, Consolas, monospace" font-size="13" font-weight="600">
+    <rect width="224" height="32" fill="#22D3C5"/>
+    <text x="11" y="21" fill="#07110F">CODEX DESKTOP + CLI</text>
+    <text x="0" y="78" fill="#9FB4AE">UNOFFICIAL COMMUNITY PROJECT</text>
+  </g>
+
+  <g transform="translate(842 48)">
+    <rect width="300" height="534" rx="12" fill="#10201C" stroke="#274038" stroke-width="2"/>
+    <text x="28" y="42" fill="#9FB4AE" font-family="Menlo, Consolas, monospace" font-size="12" font-weight="600">LIVE EVIDENCE</text>
+    <path d="M50 82 V432" stroke="#274038" stroke-width="4"/>
+    <path d="M50 82 V344" stroke="#22D3C5" stroke-width="4"/>
+
+    <g font-family="Menlo, Consolas, monospace">
+      <circle cx="50" cy="92" r="9" fill="#22D3C5"/>
+      <text x="80" y="89" fill="#F2F7F5" font-size="16" font-weight="700">SEARCH</text>
+      <text x="80" y="113" fill="#9FB4AE" font-size="12">event observed</text>
+
+      <circle cx="50" cy="182" r="9" fill="#22D3C5"/>
+      <text x="80" y="179" fill="#F2F7F5" font-size="16" font-weight="700">OPEN</text>
+      <text x="80" y="203" fill="#9FB4AE" font-size="12">page URL observed</text>
+
+      <circle cx="50" cy="272" r="9" fill="#22D3C5"/>
+      <text x="80" y="269" fill="#F2F7F5" font-size="16" font-weight="700">DATE</text>
+      <text x="80" y="293" fill="#9FB4AE" font-size="12">publish != event</text>
+
+      <circle cx="50" cy="362" r="9" fill="#22D3C5"/>
+      <text x="80" y="359" fill="#F2F7F5" font-size="16" font-weight="700">SOURCE</text>
+      <text x="80" y="383" fill="#9FB4AE" font-size="12">URL matched</text>
+
+      <circle cx="50" cy="452" r="9" fill="#22D3C5"/>
+      <rect x="80" y="430" width="118" height="38" fill="#22D3C5"/>
+      <text x="93" y="455" fill="#07110F" font-size="14" font-weight="700">VERIFIED</text>
+    </g>
+  </g>
+</svg>

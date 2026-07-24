@@ -8,12 +8,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsup && node scripts/build-plugin.mjs",
+    "build": "npm run render:assets && tsup && node scripts/build-plugin.mjs",
     "check": "npm run typecheck && npm run test && npm run build && node scripts/check-dist.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "doctor": "node plugins/codex-search-bridge/dist/server.mjs --doctor"
+    "doctor": "node plugins/codex-search-bridge/dist/server.mjs --doctor",
+    "render:assets": "node scripts/render-assets.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",

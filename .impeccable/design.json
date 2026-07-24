@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-25T00:00:00.000Z",
+  "title": "Design System: Codex Search Bridge",
+  "extensions": {
+    "colorMeta": {
+      "void": {
+        "role": "neutral",
+        "displayName": "Void",
+        "canonical": "#07110F",
+        "tonalRamp": ["#020605", "#07110F", "#10201C", "#274038", "#516B64", "#9FB4AE", "#D7E3DF", "#F2F7F5"]
+      },
+      "verified-teal": {
+        "role": "primary",
+        "displayName": "Verified Teal",
+        "canonical": "#22D3C5",
+        "tonalRamp": ["#052E2B", "#07534C", "#0B786E", "#109D91", "#22D3C5", "#69E4D9", "#A9F1EB", "#E1FBF8"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Public display",
+        "purpose": "Project name and one launch promise."
+      },
+      "evidence": {
+        "displayName": "Evidence mono",
+        "purpose": "URLs, dates, events, and verification state."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Evidence Panel",
+      "kind": "card",
+      "refersTo": "evidence-panel",
+      "description": "Groups one chain of search, source, and date evidence.",
+      "html": "<section class=\"ds-evidence-panel\"><strong>OPEN_PAGE</strong><span>source URL observed</span></section>",
+      "css": ".ds-evidence-panel { display: grid; gap: 8px; padding: 24px; color: #F2F7F5; background: #10201C; border: 1px solid #274038; border-radius: 12px; font-family: Arial, Helvetica, sans-serif; } .ds-evidence-panel strong { color: #22D3C5; font-family: Menlo, Consolas, monospace; font-size: 14px; }"
+    },
+    {
+      "name": "Verified Label",
+      "kind": "chip",
+      "refersTo": "verified-label",
+      "description": "Marks one completed evidence chain.",
+      "html": "<span class=\"ds-verified-label\">VERIFIED</span>",
+      "css": ".ds-verified-label { display: inline-block; padding: 6px 10px; color: #07110F; background: #22D3C5; border-radius: 0; font: 600 14px/1.4 Menlo, Consolas, monospace; letter-spacing: 0.02em; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Evidence Relay",
+    "overview": "A chain-of-custody visual system for the live web. Direct language and structured proof stay distinct, connected by one verified signal.",
+    "keyCharacteristics": [
+      "One teal signal moving through dark neutral space",
+      "Strong sans display type with compact mono evidence labels",
+      "Flat geometry, explicit connections, no decorative glow",
+      "Dates, URLs, and verification states treated as first-class content"
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "body": "Verified Teal is the only saturated color.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Glow Rule",
+        "body": "Never add an outer neon glow, purple haze, or mesh gradient.",
+        "section": "colors"
+      },
+      {
+        "name": "The Human First Rule",
+        "body": "Lead with plain-language consequence; use mono only for actual machine evidence.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do make search, open-page, URL, event date, and uncertainty states visible.",
+      "Do label the project as an unofficial community project."
+    ],
+    "donts": [
+      "Don't use generic AI-tool marketing with purple gradients or glowing brains.",
+      "Don't build fake terminal dashboards that imply runtime proof.",
+      "Don't use OpenAI visual mimicry or suggest an official plugin."
+    ]
+  }
+}

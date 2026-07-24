@@ -34,6 +34,8 @@
       "Open the relevant pages and mark anything unconfirmed.",
       "Check the latest release and separate publish date from event date."
     ],
-    "brandColor": "#22D3C5"
+    "brandColor": "#22D3C5",
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
   }
 }

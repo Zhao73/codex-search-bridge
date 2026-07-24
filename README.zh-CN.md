@@ -1,5 +1,7 @@
 # Codex Search Bridge
 
+![Codex Search Bridge 让可调用工具的模型获得可验证实时网页研究](assets/hero.svg)
+
 让 Codex 中任何**能够调用工具**的外部／开源模型获得可验证的实时网页研究能力。
 
 [English](README.md) · [架构](docs/architecture.md) · [安全](docs/security.md)
@@ -88,11 +90,11 @@ npm run doctor
 
 | 字段 | 必填 | 说明 |
 |---|---:|---|
-| `question` | 是 | 1–8,000 字符的研究问题 |
-| `recency_hours` | 否 | 1–8,760 小时的回溯范围 |
+| `question` | 是 | 1-8,000 字符的研究问题 |
+| `recency_hours` | 否 | 1-8,760 小时的回溯范围 |
 | `date_from`, `date_to` | 否 | `YYYY-MM-DD` 日期边界 |
 | `language` | 否 | BCP 47 风格语言标签 |
-| `max_sources` | 否 | 3–12，默认 6 |
+| `max_sources` | 否 | 3-12，默认 6 |
 | `depth` | 否 | `quick`、默认 `standard` 或 `deep` |
 
 `quick` 至少需要真实搜索；`standard` 和 `deep` 还必须拿出网页打开证据；`deep` 会要求关键主张尽量有独立来源交叉核验。

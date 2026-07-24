@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Search Bridge geometric mark</title>
+  <desc id="desc">Two evidence endpoints connected by a stepped teal bridge on a dark field.</desc>
+  <rect width="512" height="512" fill="#07110F"/>
+  <rect x="72" y="166" width="116" height="180" rx="12" fill="#10201C" stroke="#F2F7F5" stroke-width="12"/>
+  <rect x="324" y="166" width="116" height="180" rx="12" fill="#10201C" stroke="#F2F7F5" stroke-width="12"/>
+  <path d="M130 256 H220 V214 H292 V256 H382" fill="none" stroke="#22D3C5" stroke-width="20" stroke-linecap="square" stroke-linejoin="miter"/>
+  <rect x="204" y="198" width="32" height="32" fill="#22D3C5"/>
+  <rect x="276" y="198" width="32" height="32" fill="#22D3C5"/>
+  <circle cx="130" cy="256" r="16" fill="#22D3C5"/>
+  <circle cx="382" cy="256" r="16" fill="#22D3C5"/>
+</svg>

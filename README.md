@@ -1,5 +1,7 @@
 # Codex Search Bridge
 
+![Codex Search Bridge connects tool-capable models to verified live-web research](assets/hero.svg)
+
 Give any **tool-capable** model in Codex verified live-web research.
 
 [简体中文](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Security](docs/security.md)
@@ -89,11 +91,11 @@ npm run doctor
 
 | Field | Required | Meaning |
 |---|---:|---|
-| `question` | yes | Research question, 1–8,000 characters |
+| `question` | yes | Research question, 1-8,000 characters |
 | `recency_hours` | no | Lookback from 1 to 8,760 hours |
 | `date_from`, `date_to` | no | Inclusive `YYYY-MM-DD` bounds |
 | `language` | no | BCP 47-style output/source preference |
-| `max_sources` | no | 3–12, default 6 |
+| `max_sources` | no | 3-12, default 6 |
 | `depth` | no | `quick`, `standard` (default), or `deep` |
 
 `quick` requires a real search. `standard` and `deep` also require page-opening evidence. `deep` asks for independent corroboration of important claims.

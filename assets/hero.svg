@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+  <title id="title">Codex Search Bridge live-web research</title>
+  <desc id="desc">An asymmetric launch graphic connecting a tool-capable external model to verified Codex live-web evidence.</desc>
+  <rect width="1440" height="720" fill="#07110F"/>
+
+  <g transform="translate(72 54)">
+    <rect width="34" height="42" rx="4" fill="#10201C" stroke="#F2F7F5" stroke-width="3"/>
+    <rect x="58" width="34" height="42" rx="4" fill="#10201C" stroke="#F2F7F5" stroke-width="3"/>
+    <path d="M17 21 H39 V11 H53 V21 H75" fill="none" stroke="#22D3C5" stroke-width="5"/>
+    <text x="116" y="29" fill="#F2F7F5" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="1">CODEX SEARCH BRIDGE</text>
+  </g>
+
+  <g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="-2">
+    <text x="72" y="196" fill="#F2F7F5" font-size="76">ANY TOOL-CAPABLE</text>
+    <text x="72" y="280" fill="#F2F7F5" font-size="76">MODEL CAN SEARCH</text>
+    <text x="72" y="364" fill="#22D3C5" font-size="76">THE LIVE WEB.</text>
+  </g>
+
+  <text x="76" y="430" fill="#9FB4AE" font-family="Arial, Helvetica, sans-serif" font-size="24">
+    <tspan x="76" dy="0">Search. Open sources. Separate publish dates from event dates.</tspan>
+    <tspan x="76" dy="36">Return verified evidence to the current Codex conversation.</tspan>
+  </text>
+
+  <g transform="translate(76 544)" font-family="Menlo, Consolas, monospace" font-size="15" font-weight="600">
+    <rect width="206" height="34" fill="#22D3C5"/>
+    <text x="12" y="22" fill="#07110F">MCP-CAPABLE MODELS</text>
+    <text x="0" y="74" fill="#9FB4AE">CODEX DESKTOP + CLI</text>
+    <text x="0" y="103" fill="#9FB4AE">UNOFFICIAL COMMUNITY PROJECT</text>
+  </g>
+
+  <g transform="translate(894 64)">
+    <rect width="474" height="592" rx="12" fill="#10201C" stroke="#274038" stroke-width="2"/>
+    <text x="34" y="48" fill="#9FB4AE" font-family="Menlo, Consolas, monospace" font-size="14" font-weight="600">EVIDENCE RELAY</text>
+
+    <path d="M58 104 V484" stroke="#274038" stroke-width="4"/>
+    <path d="M58 104 V350" stroke="#22D3C5" stroke-width="4"/>
+
+    <g font-family="Menlo, Consolas, monospace">
+      <circle cx="58" cy="104" r="11" fill="#22D3C5"/>
+      <text x="94" y="101" fill="#F2F7F5" font-size="19" font-weight="700">WEB_SEARCH</text>
+      <text x="94" y="126" fill="#9FB4AE" font-size="14">completed event observed</text>
+
+      <circle cx="58" cy="198" r="11" fill="#22D3C5"/>
+      <text x="94" y="195" fill="#F2F7F5" font-size="19" font-weight="700">OPEN_PAGE</text>
+      <text x="94" y="220" fill="#9FB4AE" font-size="14">source URL observed</text>
+
+      <circle cx="58" cy="292" r="11" fill="#22D3C5"/>
+      <text x="94" y="289" fill="#F2F7F5" font-size="19" font-weight="700">VERIFY_DATES</text>
+      <text x="94" y="314" fill="#9FB4AE" font-size="14">published_at  2026-07-25</text>
+      <text x="94" y="337" fill="#9FB4AE" font-size="14">event_date      2026-07-24</text>
+
+      <circle cx="58" cy="386" r="11" fill="#22D3C5"/>
+      <text x="94" y="383" fill="#F2F7F5" font-size="19" font-weight="700">MATCH_SOURCE</text>
+      <text x="94" y="408" fill="#9FB4AE" font-size="14">URL present in event stream</text>
+
+      <circle cx="58" cy="484" r="11" fill="#22D3C5"/>
+      <rect x="94" y="458" width="134" height="42" fill="#22D3C5"/>
+      <text x="108" y="485" fill="#07110F" font-size="16" font-weight="700">VERIFIED</text>
+      <text x="94" y="534" fill="#9FB4AE" font-size="14">unconfirmed claims stay visible</text>
+    </g>
+  </g>
+</svg>

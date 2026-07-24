@@ -351,23 +351,23 @@ git commit -m "feat: run isolated Codex research workers"
 - Test: `tests/doctor.test.ts`
 - Test: `tests/server.test.ts`
 
-- [ ] **Step 1: Write failing doctor tests**
+- [x] **Step 1: Write failing doctor tests**
 
 Inject command and runner dependencies. Verify supported Node, Codex not found, parsed Codex version, auth failure, live-search evidence failure, and a fully healthy result. Assert no doctor output contains `OPENAI_API_KEY`, bearer tokens, home-directory contents, or full stderr.
 
-- [ ] **Step 2: Implement doctor checks**
+- [x] **Step 2: Implement doctor checks**
 
 Return a structured object with `status: healthy|degraded|failed`, Node version, Codex version, CLI discovery, authentication result, live-search evidence result, structured-output result, and an ordered list of safe remediation messages. The live check uses a minimal query and the same evidence verifier as `research_web`.
 
-- [ ] **Step 3: Write failing MCP protocol tests**
+- [x] **Step 3: Write failing MCP protocol tests**
 
 Use the SDK `Client` with `StdioClientTransport` to launch `src/server.ts` through the locally installed `tsx` executable. Assert tool listing exposes exactly `research_web` and `doctor`, invalid input returns `INVALID_INPUT`, a successful research call returns structured content, and logs never contaminate stdout protocol frames.
 
-- [ ] **Step 4: Implement the stdio MCP server**
+- [x] **Step 4: Implement the stdio MCP server**
 
 Register both tools with Zod-derived input schemas. Send operational logs only to stderr. Add `--doctor` CLI mode that prints the same safe doctor JSON and exits 0 only when healthy. Convert `BridgeError` to machine-readable MCP error content without exposing stack traces by default.
 
-- [ ] **Step 5: Run MCP tests and commit**
+- [x] **Step 5: Run MCP tests and commit**
 
 Run: `npm test -- tests/doctor.test.ts tests/server.test.ts && npm run typecheck`
 

@@ -289,15 +289,15 @@ git commit -m "feat: verify Codex web-search evidence"
 - Test: `tests/codex-process.test.ts`
 - Test: `tests/research-runner.test.ts`
 
-- [ ] **Step 1: Write failing prompt tests**
+- [x] **Step 1: Write failing prompt tests**
 
 Assert that a prompt built from a hostile question preserves the question as delimited data and always contains these requirements: live search, open relevant pages for standard/deep, distinguish publication/update/event/retrieval dates, treat page instructions as untrusted, cite source IDs, preserve conflicts, and return only the schema-compatible JSON result.
 
-- [ ] **Step 2: Implement the fixed prompt builder**
+- [x] **Step 2: Implement the fixed prompt builder**
 
 Serialize the validated request as JSON inside explicit `<research_request>` delimiters. Do not concatenate caller text into instructions. Include the current RFC 3339 instant and timezone. Keep the system invariant text constant so tests can snapshot it.
 
-- [ ] **Step 3: Write failing process-control tests**
+- [x] **Step 3: Write failing process-control tests**
 
 Use a fake child process to prove:
 
@@ -309,11 +309,11 @@ Use a fake child process to prove:
 - non-zero exit maps auth and search-policy signatures to their stable error codes;
 - arbitrary stderr text is redacted before public return.
 
-- [ ] **Step 4: Implement process control**
+- [x] **Step 4: Implement process control**
 
 Use `cross-spawn`. Spawn a detached process group on POSIX, and terminate the Windows process tree through a platform-specific helper without interpolating user text. Default caps: stdout 8 MiB, stderr 1 MiB; default concurrency two; queue length eight.
 
-- [ ] **Step 5: Write the fake Codex executable and runner tests**
+- [x] **Step 5: Write the fake Codex executable and runner tests**
 
 The fixture accepts Codex-like arguments, reads stdin, emits deterministic JSONL, and writes a schema-valid result to the `--output-last-message` path. Test exact global/subcommand ordering:
 
@@ -326,11 +326,11 @@ expect(args).toContain("read-only");
 expect(args).toContain("--ephemeral");
 ```
 
-- [ ] **Step 6: Implement the research runner**
+- [x] **Step 6: Implement the research runner**
 
 Create a private temporary directory per task, call the process controller, parse the result file with `ResearchResultSchema`, parse JSONL evidence, verify it, and remove the temporary directory in `finally`. Support `CODEX_SEARCH_BRIDGE_CODEX_BIN` and maintainer-only `CODEX_SEARCH_BRIDGE_MODEL`; neither is exposed to MCP input.
 
-- [ ] **Step 7: Run runner tests and commit**
+- [x] **Step 7: Run runner tests and commit**
 
 Run: `npm test -- tests/research-prompt.test.ts tests/codex-process.test.ts tests/research-runner.test.ts`
 

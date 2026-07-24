@@ -1,0 +1,4 @@
+{"timestamp":"2026-07-25T00:00:00Z","type":"event_msg","payload":{"type":"web_search_end","call_id":"call_search","query":"official launch","action":{"type":"search","query":"official launch","queries":["official launch"]}}}
+{"timestamp":"2026-07-25T00:00:00Z","type":"response_item","payload":{"type":"web_search_call","id":"call_search","status":"completed","action":{"type":"search","query":"official launch","queries":["official launch"]}}}
+{"timestamp":"2026-07-25T00:00:01Z","type":"event_msg","payload":{"type":"web_search_end","call_id":"call_open","query":"https://example.com/news/launch","action":{"type":"open_page","url":"https://example.com/news/launch"}}}
+{"timestamp":"2026-07-25T00:00:01Z","type":"response_item","payload":{"type":"web_search_call","id":"call_open","status":"completed","action":{"type":"open_page","url":"https://example.com/news/launch"}}}

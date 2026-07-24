@@ -215,7 +215,7 @@ git commit -m "feat: define verified research contracts"
 - Test: `tests/verifier.test.ts`
 - Create: `tests/fixtures/events/*.jsonl`
 
-- [ ] **Step 1: Write failing JSONL parser tests**
+- [x] **Step 1: Write failing JSONL parser tests**
 
 Fixtures must include search, `open_page`, malformed line, unknown event, final message, and process error cases. Assert:
 
@@ -229,11 +229,11 @@ expect(evidence.unknownEventTypes).toEqual(["future.event"]);
 
 Malformed non-empty JSONL must raise `WORKER_FAILED`; unknown well-formed event types must be preserved for diagnostics and never counted as proof.
 
-- [ ] **Step 2: Implement the streaming parser**
+- [x] **Step 2: Implement the streaming parser**
 
 Expose `CodexEvidence` with counters, observed URLs, queries, unknown types, final message text, and sanitized error summaries. Parse one line at a time so the runner can enforce byte limits without buffering unbounded output.
 
-- [ ] **Step 3: Write failing URL normalization tests**
+- [x] **Step 3: Write failing URL normalization tests**
 
 Verify host casing, default ports, fragments, `utm_*`, `gclid`, and trailing-slash behavior. Do not strip semantic query parameters.
 
@@ -244,11 +244,11 @@ expect(urlsMatch("https://example.com/story?id=7", "https://example.com/story?id
   .toBe(false);
 ```
 
-- [ ] **Step 4: Implement provenance matching**
+- [x] **Step 4: Implement provenance matching**
 
 Return exact normalized matches first. Support redirects only through an explicit observed redirect map; never infer equivalence from matching domains alone.
 
-- [ ] **Step 5: Write failing verifier tests**
+- [x] **Step 5: Write failing verifier tests**
 
 Cover:
 
@@ -261,11 +261,11 @@ Cover:
 - conflicting claim status remains conflicting;
 - a relative publication time may not produce high confidence.
 
-- [ ] **Step 6: Implement conservative verification**
+- [x] **Step 6: Implement conservative verification**
 
 `verifyResearchResult(result, evidence, depth)` must return a new immutable result. It sets each source `provenance_verified`, downgrades unsupported statuses, calculates counters, adds limitations, and refuses to upgrade a Worker-provided confidence. It must never silently remove a conflicting or unconfirmed claim.
 
-- [ ] **Step 7: Run evidence tests and commit**
+- [x] **Step 7: Run evidence tests and commit**
 
 Run: `npm test -- tests/jsonl-events.test.ts tests/url-evidence.test.ts tests/verifier.test.ts`
 

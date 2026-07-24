@@ -1,0 +1,9 @@
+{"type":"thread.started","thread_id":"thread_1"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"call_search","type":"web_search","query":"","action":{"type":"other"}}}
+{"type":"item.completed","item":{"id":"call_search","type":"web_search","query":"official launch","action":{"type":"search","query":"official launch","queries":["official launch"]}}}
+{"type":"item.completed","item":{"id":"call_open_1","type":"web_search","query":"https://example.com/news/launch","action":{"type":"open_page","url":"https://example.com/news/launch"}}}
+{"type":"item.completed","item":{"id":"call_open_2","type":"web_search","query":"https://news.example.org/report","action":{"type":"open_page","url":"https://news.example.org/report"}}}
+{"type":"future.event","payload":{"value":1}}
+{"type":"item.completed","item":{"id":"message_1","type":"agent_message","text":"Research complete."}}
+{"type":"turn.completed","usage":{"input_tokens":10,"output_tokens":5}}

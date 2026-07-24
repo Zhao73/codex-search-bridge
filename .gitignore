@@ -1,5 +1,7 @@
 .worktrees/
 node_modules/
 coverage/
+dist/
+.vitest/
 .DS_Store
 *.log

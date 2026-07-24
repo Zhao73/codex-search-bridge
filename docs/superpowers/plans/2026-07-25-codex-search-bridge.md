@@ -57,7 +57,7 @@ The implementation uses focused modules with stable boundaries:
 - Create: `LICENSE`
 - Test: `tests/smoke.test.ts`
 
-- [ ] **Step 1: Create the package manifest and lock current dependency versions**
+- [x] **Step 1: Create the package manifest and lock current dependency versions**
 
 Use `npm view <package> version` to record current stable versions, then create scripts with these exact behaviors:
 
@@ -79,13 +79,13 @@ Use `npm view <package> version` to record current stable versions, then create 
 }
 ```
 
-Install `@modelcontextprotocol/sdk`, `zod`, and `cross-spawn` as runtime dependencies. Install `@types/cross-spawn`, `@types/node`, `typescript`, `tsup`, `vitest`, and `sharp` as development dependencies. Commit `package-lock.json`.
+Install `@modelcontextprotocol/sdk`, `zod`, and `cross-spawn` as runtime dependencies. Install `@types/cross-spawn`, `@types/node`, `typescript`, `tsup`, `tsx`, `vitest`, and `sharp` as development dependencies. Commit `package-lock.json`.
 
-- [ ] **Step 2: Create strict compiler, build, and test configuration**
+- [x] **Step 2: Create strict compiler, build, and test configuration**
 
 Use ESM, NodeNext resolution, `strict: true`, `noUncheckedIndexedAccess: true`, and `exactOptionalPropertyTypes: true`. Build `src/server.ts` to `dist/server.mjs`, bundle runtime dependencies, emit no source maps in the distributable plugin, and run tests in Node environment with a 10-second default timeout.
 
-- [ ] **Step 3: Write the initial failing smoke test**
+- [x] **Step 3: Write the initial failing smoke test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -98,13 +98,13 @@ describe("package skeleton", () => {
 });
 ```
 
-- [ ] **Step 4: Run the smoke test and verify the expected failure**
+- [x] **Step 4: Run the smoke test and verify the expected failure**
 
 Run: `npm test -- tests/smoke.test.ts`
 
 Expected: FAIL because `src/contracts.ts` does not exist.
 
-- [ ] **Step 5: Add the minimal contracts module and Apache-2.0 license**
+- [x] **Step 5: Add the minimal contracts module and Apache-2.0 license**
 
 ```ts
 export const PROJECT_NAME = "Codex Search Bridge" as const;
@@ -113,7 +113,7 @@ export const PROJECT_VERSION = "0.1.0" as const;
 
 Add the unmodified Apache License 2.0 text with copyright `2026 ChouJ`.
 
-- [ ] **Step 6: Run the smoke test and commit**
+- [x] **Step 6: Run the smoke test and commit**
 
 Run: `npm test -- tests/smoke.test.ts`
 

@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run check
+      - run: git diff --exit-code -- plugins/codex-search-bridge/dist plugins/codex-search-bridge/schemas
+      - name: Build release archives
+        shell: bash
+        run: |
+          mkdir -p artifacts/stage
+          cp -a plugins/codex-search-bridge artifacts/stage/
+          cp LICENSE README.md README.zh-CN.md artifacts/stage/codex-search-bridge/
+          tar -C artifacts/stage -czf "artifacts/codex-search-bridge-${GITHUB_REF_NAME}.tar.gz" codex-search-bridge
+          (cd artifacts/stage && zip -qr "../codex-search-bridge-${GITHUB_REF_NAME}.zip" codex-search-bridge)
+          (cd artifacts && sha256sum *.tar.gz *.zip > SHA256SUMS.txt)
+          rm -rf artifacts/stage
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          artifacts/codex-search-bridge-*.tar.gz
+          artifacts/codex-search-bridge-*.zip
+          artifacts/SHA256SUMS.txt
+          --verify-tag
+          --title "Codex Search Bridge $GITHUB_REF_NAME"
+          --generate-notes

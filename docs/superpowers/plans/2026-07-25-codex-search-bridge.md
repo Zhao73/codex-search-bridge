@@ -444,33 +444,33 @@ git commit -m "feat: package Codex Search Bridge plugin"
 - Create: `.github/workflows/release.yml`
 - Test: `tests/docs.test.ts`
 
-- [ ] **Step 1: Write failing documentation tests**
+- [x] **Step 1: Write failing documentation tests**
 
 Assert both READMEs contain: community/unofficial notice, MCP-capable model limitation, Codex auth/quota requirement, Windows/macOS instructions, verified current install commands, `doctor`, live-search proof explanation, date semantics, privacy model, uninstall instructions, and links to architecture/security docs.
 
-- [ ] **Step 2: Write English and Chinese READMEs from actual local commands**
+- [x] **Step 2: Write English and Chinese READMEs from actual local commands**
 
 Run each published command locally before including it. Use a five-minute Quick Start, a compatibility table with `tested`, `CI-tested`, and `unverified` states, one verified sample result, troubleshooting by stable error code, and no unconditional “any model” claim.
 
-- [ ] **Step 3: Write architecture and security documents**
+- [x] **Step 3: Write architecture and security documents**
 
 Document the child-process boundary, event-proof algorithm, URL matching, prompt-injection model, data sent to Codex, temporary-file lifecycle, quota/latency implications, responsible disclosure, and explicit non-goals.
 
-- [ ] **Step 4: Add contribution and security policy**
+- [x] **Step 4: Add contribution and security policy**
 
 Require tests for new Codex event shapes, fixtures for parser changes, no secrets in issues, and private vulnerability reporting through GitHub's security advisory flow.
 
-- [ ] **Step 5: Add CI and release workflows**
+- [x] **Step 5: Add CI and release workflows**
 
 CI matrix: `macos-latest`, `windows-latest`, `ubuntu-latest` with Node 20 and 22; run `npm ci`, `npm run check`, and plugin package validation. Release workflow triggers on `v*`, rebuilds, checks dist drift, packages the plugin directory, generates checksums, and attaches them to the GitHub release without publishing npm.
 
-- [ ] **Step 6: Run documentation and full local checks**
+- [x] **Step 6: Run documentation and full local checks**
 
 Run: `npm test -- tests/docs.test.ts && npm run check`
 
 Expected: documentation requirements and all previous tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add README.md README.zh-CN.md docs/architecture.md docs/security.md CONTRIBUTING.md SECURITY.md .github tests/docs.test.ts

@@ -1,6 +1,6 @@
 # Codex Search Bridge v1 设计规格
 
-- 状态：详细设计已获用户批准，书面规格待用户复核
+- 状态：用户已于 2026-07-25 批准书面规格，进入实施
 - 日期：2026-07-25
 - 目标平台：Codex Desktop、Codex CLI；Windows、macOS 首发，Linux 纳入持续集成
 - 许可证：Apache-2.0

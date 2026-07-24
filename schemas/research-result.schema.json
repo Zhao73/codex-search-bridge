@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ChouJ/codex-search-bridge/schemas/research-result.schema.json",
+  "title": "Codex Search Bridge Research Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "answer",
+    "as_of",
+    "query",
+    "claims",
+    "sources",
+    "verification",
+    "limitations"
+  ],
+  "properties": {
+    "answer": { "type": "string", "minLength": 1 },
+    "as_of": { "type": "string", "format": "date-time" },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["question", "depth", "max_sources"],
+      "properties": {
+        "question": { "type": "string", "minLength": 1, "maxLength": 8000 },
+        "depth": { "enum": ["quick", "standard", "deep"] },
+        "max_sources": { "type": "integer", "minimum": 3, "maximum": 12 },
+        "recency_hours": { "type": "integer", "minimum": 1, "maximum": 8760 },
+        "date_from": { "type": "string", "format": "date" },
+        "date_to": { "type": "string", "format": "date" },
+        "language": { "type": "string", "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$" }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "claim", "status", "confidence", "source_ids"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "claim": { "type": "string", "minLength": 1 },
+          "status": {
+            "enum": ["confirmed", "partially_confirmed", "unconfirmed", "conflicting"]
+          },
+          "confidence": { "enum": ["high", "moderate", "low", "unknown"] },
+          "event_date": {
+            "type": "string",
+            "anyOf": [{ "format": "date" }, { "format": "date-time" }]
+          },
+          "source_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "note": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "url",
+          "title",
+          "retrieved_at",
+          "source_type",
+          "provenance_verified"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "format": "uri" },
+          "title": { "type": "string", "minLength": 1 },
+          "publisher": { "type": "string", "minLength": 1 },
+          "published_at": {
+            "type": "string",
+            "anyOf": [{ "format": "date" }, { "format": "date-time" }]
+          },
+          "updated_at": {
+            "type": "string",
+            "anyOf": [{ "format": "date" }, { "format": "date-time" }]
+          },
+          "retrieved_at": { "type": "string", "format": "date-time" },
+          "source_type": { "enum": ["primary", "secondary", "social", "unknown"] },
+          "provenance_verified": { "type": "boolean" }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "web_search_events",
+        "opened_page_events",
+        "cited_sources_seen_in_events",
+        "total_cited_sources"
+      ],
+      "properties": {
+        "status": { "enum": ["verified", "partial", "failed"] },
+        "web_search_events": { "type": "integer", "minimum": 0 },
+        "opened_page_events": { "type": "integer", "minimum": 0 },
+        "cited_sources_seen_in_events": { "type": "integer", "minimum": 0 },
+        "total_cited_sources": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}

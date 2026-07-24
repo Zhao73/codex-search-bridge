@@ -136,7 +136,7 @@ git commit -m "chore: bootstrap Codex Search Bridge"
 - Test: `tests/contracts.test.ts`
 - Test: `tests/time-window.test.ts`
 
-- [ ] **Step 1: Write failing contract tests**
+- [x] **Step 1: Write failing contract tests**
 
 Cover these exact cases:
 
@@ -151,13 +151,13 @@ expect(() => ResearchWebInputSchema.parse({ question: "x", date_from: "2026-02-3
 
 Also validate a complete `ResearchResult` with `confirmed`, `partially_confirmed`, `unconfirmed`, and `conflicting` claims.
 
-- [ ] **Step 2: Run contract tests and verify failure**
+- [x] **Step 2: Run contract tests and verify failure**
 
 Run: `npm test -- tests/contracts.test.ts`
 
 Expected: FAIL with missing schema exports.
 
-- [ ] **Step 3: Implement Zod contracts and stable error codes**
+- [x] **Step 3: Implement Zod contracts and stable error codes**
 
 Define and export:
 
@@ -176,7 +176,7 @@ export const ConfidenceSchema = z.enum(["high", "moderate", "low", "unknown"]);
 
 `BridgeError` must expose only these public codes: `INVALID_INPUT`, `CODEX_NOT_FOUND`, `CODEX_AUTH_REQUIRED`, `WEB_SEARCH_UNAVAILABLE`, `WORKER_TIMEOUT`, `WORKER_CANCELLED`, `WORKER_FAILED`, `OUTPUT_LIMIT_EXCEEDED`, `INVALID_STRUCTURED_OUTPUT`, `EVIDENCE_VERIFICATION_FAILED`, and `QUEUE_FULL`.
 
-- [ ] **Step 4: Write failing time-window tests**
+- [x] **Step 4: Write failing time-window tests**
 
 ```ts
 expect(resolveTimeWindow({ question: "x", date_from: "2026-07-01", date_to: "2026-07-25" }, now))
@@ -187,11 +187,11 @@ expect(() => resolveTimeWindow({ question: "x", date_from: "2026-07-25", date_to
   .toThrowError(/INVALID_INPUT/);
 ```
 
-- [ ] **Step 5: Implement time-window intersection and JSON Schema**
+- [x] **Step 5: Implement time-window intersection and JSON Schema**
 
 Use UTC instants for `recency_hours`, calendar dates for explicit date bounds, and reject an empty intersection. Add a strict Draft 2020-12 schema for the worker result: all top-level properties required except optional query filters; `additionalProperties: false` at every object boundary; RFC 3339 formats for instants; explicit enums for statuses.
 
-- [ ] **Step 6: Run tests, validate the schema, and commit**
+- [x] **Step 6: Run tests, validate the schema, and commit**
 
 Run: `npm test -- tests/contracts.test.ts tests/time-window.test.ts && npm run typecheck`
 

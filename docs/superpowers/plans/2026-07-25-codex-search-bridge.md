@@ -392,27 +392,27 @@ git commit -m "feat: expose verified research over MCP"
 - Create: `.agents/plugins/marketplace.json`
 - Test: `tests/plugin-package.test.ts`
 
-- [ ] **Step 1: Inspect current official plugin schemas before authoring manifests**
+- [x] **Step 1: Inspect current official plugin schemas before authoring manifests**
 
 Read the complete local `plugin-creator` and `skill-creator` instructions and current official Codex plugin docs. Inspect at least one installed plugin with an MCP server. Record the exact current manifest keys in the test fixture; do not guess between `.mcp.json`, embedded `mcpServers`, and `mcp_servers`.
 
-- [ ] **Step 2: Write failing package validation tests**
+- [x] **Step 2: Write failing package validation tests**
 
 Assert plugin name/version/description, server entry path, bundled schema existence, skill discovery metadata, marketplace source path, executable build presence, and that every declared relative path stays inside the plugin directory.
 
-- [ ] **Step 3: Implement build and dist consistency scripts**
+- [x] **Step 3: Implement build and dist consistency scripts**
 
 `build-plugin.mjs` copies `dist/server.mjs` and `schemas/research-result.schema.json` into the plugin. `check-dist.mjs` builds into a temporary directory and byte-compares distributable files to committed artifacts, returning a non-zero exit on drift.
 
-- [ ] **Step 4: Author the plugin and marketplace manifests**
+- [x] **Step 4: Author the plugin and marketplace manifests**
 
 Use the current validated schema. The stdio server command must invoke Node with a plugin-root-relative bundled `dist/server.mjs`. Declare no network API key or OAuth connector because the child Codex process uses the user's existing Codex authentication.
 
-- [ ] **Step 5: Author the verified web research Skill**
+- [x] **Step 5: Author the verified web research Skill**
 
 The Skill must require `research_web` for explicit searches and unstable facts, state the tool-capability limitation, render inline links, distinguish all four date fields, display `as_of`, preserve conflicts, list unconfirmed information, and state when no real search evidence exists. Keep instructions concise enough for weaker local models.
 
-- [ ] **Step 6: Validate skill metadata and build the plugin**
+- [x] **Step 6: Validate skill metadata and build the plugin**
 
 Run the validation scripts supplied by `skill-creator`, then:
 
@@ -420,11 +420,11 @@ Run: `npm run build && npm test -- tests/plugin-package.test.ts && node scripts/
 
 Expected: built artifact exists, package tests pass, and dist consistency check returns 0.
 
-- [ ] **Step 7: Install from the local marketplace and test discovery**
+- [x] **Step 7: Install from the local marketplace and test discovery**
 
 Use the exact current `codex plugin marketplace add` and `codex plugin add` syntax shown by `--help`. Verify `codex plugin list` shows `codex-search-bridge` enabled, and inspect the installed snapshot rather than assuming the source folder is used directly.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add scripts plugins .agents package.json package-lock.json tests/plugin-package.test.ts

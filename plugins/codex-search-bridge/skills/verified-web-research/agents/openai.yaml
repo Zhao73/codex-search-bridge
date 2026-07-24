@@ -1,0 +1,14 @@
+interface:
+  display_name: "Verified Web Research"
+  short_description: "Verify current web facts with Codex search evidence"
+  default_prompt: "Use $verified-web-research to verify the latest information with dated sources."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "codex-search-bridge"
+      description: "Runs isolated Codex live-web research with evidence verification"
+      transport: "stdio"
+
+policy:
+  allow_implicit_invocation: true

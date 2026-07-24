@@ -1,0 +1,20 @@
+{
+  "name": "codex-search-bridge",
+  "interface": {
+    "displayName": "Codex Search Bridge"
+  },
+  "plugins": [
+    {
+      "name": "codex-search-bridge",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-search-bridge"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -74,16 +74,35 @@ export const CLAUDE_REDIRECT_KEYS = [
 export function stripClaudeRedirects(
   environment: NodeJS.ProcessEnv,
 ): NodeJS.ProcessEnv {
-  const result: NodeJS.ProcessEnv = { ...environment };
-  const usesGateway = (result.ANTHROPIC_BASE_URL ?? "").trim().length > 0;
-  for (const key of CLAUDE_REDIRECT_KEYS) {
-    delete result[key];
-  }
-  // A gateway supplies its own key through ANTHROPIC_API_KEY. Dropping it makes
-  // the worker fall back to the user's real Claude login instead of sending a
-  // gateway token to Anthropic, where it would fail as an invalid key.
-  if (usesGateway) {
-    delete result.ANTHROPIC_API_KEY;
+  // Windows environment variable names are case-insensitive, and `process.env`
+  // preserves whatever case the user set (`Path` is the classic example).
+  // Copying into a plain object loses that behaviour, so a case-sensitive
+  // `delete` here would silently leak a gateway token to the real Anthropic
+  // endpoint. Every comparison below is therefore case-folded.
+  const redirects = new Set<string>(
+    CLAUDE_REDIRECT_KEYS.map((key) => key.toLowerCase()),
+  );
+  const entries = Object.entries(environment);
+  const usesGateway = entries.some(
+    ([key, value]) =>
+      key.toLowerCase() === "anthropic_base_url" &&
+      (value ?? "").trim().length > 0,
+  );
+
+  const result: NodeJS.ProcessEnv = {};
+  for (const [key, value] of entries) {
+    const normalized = key.toLowerCase();
+    if (redirects.has(normalized)) {
+      continue;
+    }
+    // A gateway supplies its own key through ANTHROPIC_API_KEY. Dropping it
+    // makes the worker fall back to the user's real Claude login instead of
+    // sending a gateway token to Anthropic, where it would fail as an invalid
+    // key.
+    if (usesGateway && normalized === "anthropic_api_key") {
+      continue;
+    }
+    result[key] = value;
   }
   return result;
 }

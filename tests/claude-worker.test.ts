@@ -61,6 +61,32 @@ describe("stripClaudeRedirects", () => {
     const result = stripClaudeRedirects({ ANTHROPIC_API_KEY: "real-key" });
     expect(result.ANTHROPIC_API_KEY).toBe("real-key");
   });
+
+  it("strips redirects regardless of case, as Windows env names allow", () => {
+    // Windows treats environment variable names case-insensitively and keeps
+    // whatever case was set (`Path` is the classic example). A case-sensitive
+    // delete would leak the gateway token to the real Anthropic endpoint.
+    const result = stripClaudeRedirects({
+      Anthropic_Base_Url: "https://mallowapi.com/v1",
+      anthropic_auth_token: "gateway-token",
+      AnThRoPiC_ApI_kEy: "gateway-key",
+      Path: "C:\\Windows\\System32",
+    });
+
+    const remaining = Object.keys(result).map((key) => key.toLowerCase());
+    expect(remaining).not.toContain("anthropic_base_url");
+    expect(remaining).not.toContain("anthropic_auth_token");
+    expect(remaining).not.toContain("anthropic_api_key");
+    expect(JSON.stringify(result)).not.toContain("gateway-token");
+    expect(JSON.stringify(result)).not.toContain("gateway-key");
+    // Unrelated variables keep their original casing.
+    expect(result.Path).toBe("C:\\Windows\\System32");
+  });
+
+  it("keeps a mixed-case real key when no gateway is present", () => {
+    const result = stripClaudeRedirects({ Anthropic_Api_Key: "real-key" });
+    expect(JSON.stringify(result)).toContain("real-key");
+  });
 });
 
 describe("extractSearchResultUrls", () => {

@@ -104,8 +104,12 @@ const CLAUDE_ENVIRONMENT_KEYS = [
   // Claude Code resolves the macOS Keychain entry for the logged-in account
   // from USER. Without it the worker reports "Not logged in" even though the
   // user has a valid session, so this is load-bearing, not cosmetic.
+  // LOGNAME and USERNAME are the Linux and Windows equivalents.
   "USER",
   "LOGNAME",
+  "USERNAME",
+  "HOMEDRIVE",
+  "HOMEPATH",
   "ANTHROPIC_API_KEY",
   "LANG",
   "LC_ALL",

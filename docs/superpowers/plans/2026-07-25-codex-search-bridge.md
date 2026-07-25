@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build, verify, brand, and publicly release a cross-platform Codex plugin that lets any MCP-capable external model invoke an isolated Codex live-web research worker and return evidence-checked sources, dates, conflicts, and uncertainties to the current conversation.
+**Goal:** Build, verify, brand, and publicly release a cross-platform Codex plugin that exposes an isolated Codex live-web research worker to tool-capable external models and returns evidence-checked sources, dates, conflicts, and uncertainties to the current conversation.
 
 **Architecture:** A local stdio MCP server exposes `research_web` and `doctor`. `research_web` validates a deliberately small input, starts an isolated `codex --search exec` process, parses JSONL search/open-page evidence, validates structured output against a JSON Schema, and returns a verification-enriched result. A bundled Skill tells the current external model when to call the tool and how to render verified research in the current Codex conversation.
 
@@ -559,11 +559,24 @@ Choose a public event from the last 24 hours. Require `standard` depth. Save the
 
 - [ ] **Step 4: Verify JSONL evidence independently**
 
-Confirm at least one live `web_search` event, at least one open-page action, and source URL intersection. Record exact counts and the retrieval time in the verification document.
+Confirm at least one live `web_search` event, at least one attributable page open, and source URL intersection. Record exact `codex_open_page_events` and `bridge_fetch_events` counts plus retrieval time in the verification document.
 
-- [ ] **Step 5: Verify current-conversation behavior with an external model**
+### Task 9A: Runtime compatibility hardening discovered by real verification
+
+- [x] Make every Structured Outputs object property required and represent unknown optional values as nullable.
+- [x] Remove unsupported JSON Schema `format` keywords while retaining strict Zod date and URL validation after output.
+- [x] Give every Worker fresh home, Codex-home, and temp roots; copy only `auth.json` when required.
+- [x] Add a DNS-pinned, SSRF-resistant HTTP(S) fetcher for cited URLs lacking native URL-bearing open evidence.
+- [x] Report native Codex opens and Bridge fetches as separate counters.
+- [x] Feed bounded visible page text to a second isolated live-search audit pass and expose `content_audit_passes`.
+- [x] Demonstrate that the audit corrects a stale `alpha.7` draft to the directly observed `alpha.8` release.
+- [x] Verify the live `doctor` path against Codex CLI 0.145.0.
+
+- [x] **Step 5: Probe current-conversation behavior with external models and narrow claims**
 
 Run Codex CLI using one configured external model known to support MCP tools. Ask it for the same current event without explicitly naming the tool. Verify it invokes `research_web` and renders the result in the current conversation with inline sources, dates, `as_of`, and an uncertainty section. If no compatible external model is locally configured, document this item as unverified and do not claim it publicly; continue with all other work.
+
+Observed: `qwen3:4b-instruct` and `qwen3.5:4b` were negative; a `qwen3.5:9b` probe was stopped because of unacceptable host pressure before an outcome. Public documentation explicitly claims no external-model end-to-end success for v0.1.0 and preserves the detailed negative evidence. Per this step's fallback, publication continues without a positive model claim.
 
 - [ ] **Step 6: Re-run checks and commit evidence**
 

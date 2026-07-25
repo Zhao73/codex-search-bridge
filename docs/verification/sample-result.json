@@ -1,0 +1,109 @@
+{
+  "answer": "As of 2026-07-25T00:28:56.557Z, the newest published release shown by the official openai/codex Releases page is the prerelease 0.146.0-alpha.8, tag rust-v0.146.0-alpha.8—not 0.146.0-alpha.7 as stated in the draft. GitHub displays ‘released this 24 Jul 23:23,’ but the fetched page does not identify a timezone or provide seconds, so an exact publication timestamp is unconfirmed and published_at remains null. No separate software release event date is stated; therefore, that date is also unconfirmed rather than inferred from publication. GitHub’s /releases/latest endpoint redirects to 0.145.0 (tag rust-v0.145.0), which GitHub labels ‘Latest’ and displays as released ‘21 Jul 18:21’; its timezone and seconds are likewise unsupported. The repository CHANGELOG.md contains one line directing readers to the Releases page.",
+  "as_of": "2026-07-25T00:30:09.028Z",
+  "query": {
+    "question": "As of now, what is the latest published release of the official openai/codex GitHub repository? Open the official release or tag page and the official changelog or repository page when available. Report the exact version, distinguish the release publication timestamp from the software release event date, and mark any discrepancy or unsupported detail as unconfirmed.",
+    "depth": "standard",
+    "max_sources": 6,
+    "recency_hours": 168,
+    "language": "en"
+  },
+  "claims": [
+    {
+      "id": "C1",
+      "claim": "The newest published release shown by the official openai/codex Releases page is prerelease 0.146.0-alpha.8, tagged rust-v0.146.0-alpha.8.",
+      "status": "confirmed",
+      "confidence": "high",
+      "event_date": "2026-07-24",
+      "source_ids": ["S1", "S2"],
+      "note": "The fresher release listing places 0.146.0-alpha.8 ahead of 0.146.0-alpha.7, correcting the draft."
+    },
+    {
+      "id": "C2",
+      "claim": "GitHub displays ‘released this 24 Jul 23:23’ for 0.146.0-alpha.8.",
+      "status": "confirmed",
+      "confidence": "high",
+      "event_date": "2026-07-24",
+      "source_ids": ["S1", "S2"],
+      "note": "The displayed year is inferable from the page context, but the fetched content does not state a timezone or seconds. Consequently, an exact ISO publication timestamp is unsupported and published_at is null."
+    },
+    {
+      "id": "C3",
+      "claim": "The software release event date for 0.146.0-alpha.8 was 2026-07-24.",
+      "status": "unconfirmed",
+      "confidence": "low",
+      "source_ids": ["S1", "S2"],
+      "note": "The official pages provide a GitHub release-publication display but do not state a distinct software release event date."
+    },
+    {
+      "id": "C4",
+      "claim": "GitHub’s /releases/latest endpoint redirects to 0.145.0, tag rust-v0.145.0, which is labeled ‘Latest’ and displayed as released on 21 Jul at 18:21.",
+      "status": "confirmed",
+      "confidence": "high",
+      "event_date": "2026-07-21",
+      "source_ids": ["S3"],
+      "note": "This is GitHub’s designated Latest release, while newer prereleases exist. The fetched content does not state the displayed time’s timezone or seconds."
+    },
+    {
+      "id": "C5",
+      "claim": "The repository CHANGELOG.md delegates the changelog to the GitHub Releases page rather than maintaining version entries in the file.",
+      "status": "confirmed",
+      "confidence": "high",
+      "source_ids": ["S4"],
+      "note": "The file contains one line directing readers to the releases page."
+    }
+  ],
+  "sources": [
+    {
+      "id": "S1",
+      "url": "https://github.com/openai/codex/releases",
+      "title": "Releases · openai/codex · GitHub",
+      "publisher": "GitHub",
+      "retrieved_at": "2026-07-25T00:30:09.028Z",
+      "source_type": "primary",
+      "provenance_verified": true
+    },
+    {
+      "id": "S2",
+      "url": "https://github.com/openai/codex/releases/tag/rust-v0.146.0-alpha.8",
+      "title": "Release 0.146.0-alpha.8 · openai/codex · GitHub",
+      "publisher": "GitHub",
+      "retrieved_at": "2026-07-25T00:30:09.028Z",
+      "source_type": "primary",
+      "provenance_verified": true
+    },
+    {
+      "id": "S3",
+      "url": "https://github.com/openai/codex/releases/latest",
+      "title": "Release 0.145.0 · openai/codex · GitHub",
+      "publisher": "GitHub",
+      "retrieved_at": "2026-07-25T00:30:09.028Z",
+      "source_type": "primary",
+      "provenance_verified": true
+    },
+    {
+      "id": "S4",
+      "url": "https://github.com/openai/codex/blob/main/CHANGELOG.md",
+      "title": "codex/CHANGELOG.md at main · openai/codex · GitHub",
+      "publisher": "GitHub",
+      "retrieved_at": "2026-07-25T00:30:09.028Z",
+      "source_type": "primary",
+      "provenance_verified": true
+    }
+  ],
+  "verification": {
+    "status": "verified",
+    "web_search_events": 3,
+    "opened_page_events": 6,
+    "codex_open_page_events": 0,
+    "bridge_fetch_events": 6,
+    "content_audit_passes": 1,
+    "cited_sources_verified": 4,
+    "total_cited_sources": 4
+  },
+  "limitations": [
+    "The release pages display publication information only to minute precision and do not identify the timezone in the fetched text; exact published_at values therefore remain null.",
+    "No independently stated software release event date was found for 0.146.0-alpha.8.",
+    "GitHub’s ‘Latest’ designation points to 0.145.0 even though 0.146.0-alpha.8 is the newest publication, because the latter is a prerelease."
+  ]
+}

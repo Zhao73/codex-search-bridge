@@ -2,21 +2,23 @@
 
 ![Codex Search Bridge connects tool-capable models to verified live-web research](assets/hero.svg)
 
-Give any **tool-capable** model in Codex verified live-web research.
+Bring verified live-web research to **tool-capable** models in Codex.
 
 [简体中文](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Security](docs/security.md)
 
 > **Unofficial community project.** This repository is not affiliated with or endorsed by OpenAI. It uses the Codex installation, Codex authentication, web-search permission, and quota already available to the user.
 
-Codex Search Bridge is a local Codex plugin with one deliberately simple research tool. An external or open-source model running inside Codex Desktop or Codex CLI calls `research_web`; the Bridge then starts an isolated Codex worker with native live search, captures real search/page events, validates cited URLs, and returns dated evidence to the same conversation.
+Codex Search Bridge is a local Codex plugin with one deliberately simple research tool. An external or open-source model running inside Codex Desktop or Codex CLI calls `research_web`; the Bridge starts an isolated Codex worker with native live search, validates cited URLs, and returns dated evidence to the same conversation. If the installed Codex version does not expose a URL-bearing native page-open event, the Bridge opens cited pages through its own restricted HTTP(S) verifier. It never substitutes another search engine.
 
 It does **not** make a model without MCP/function calling magically tool-capable.
 
 ## What it proves
 
 - A completed live `web_search` event actually occurred.
-- Standard/deep research produced at least one `open_page` event.
-- Cited source URLs appeared in the observed Codex event stream.
+- Standard/deep research produced at least one attributable page open.
+- `codex_open_page_events` and `bridge_fetch_events` show exactly which component opened pages; their sum is `opened_page_events`.
+- `content_audit_passes` proves directly fetched page text was reconciled by a second isolated, live-searching Codex worker.
+- Cited source URLs matched either URL-bearing Codex evidence or a successful restricted Bridge fetch.
 - `published_at`, `updated_at`, `event_date`, and `retrieved_at` remain separate.
 - Unsupported claims become `unconfirmed`; incompatible sources remain `conflicting`.
 - The result includes an explicit `as_of` time and limitations.
@@ -29,13 +31,16 @@ The Bridge rejects a response when a worker merely *says* it searched but provid
 flowchart LR
     A["External or open model<br/>in Codex Desktop / CLI"] -->|"MCP research_web"| B["Codex Search Bridge"]
     B --> C["Isolated codex --search worker"]
-    C --> D["Live search + open_page"]
-    D --> E["JSONL evidence + structured result"]
+    C --> D["Codex native live search"]
+    D --> E["JSONL search / native-open evidence"]
+    D --> G["Structured cited URLs"]
+    G --> H["Restricted HTTP(S) page verifier"]
     E --> F["URL/date/claim verifier"]
+    H --> F
     F --> A
 ```
 
-The child worker runs in a fresh temporary directory with `--ignore-user-config`, `--ignore-rules`, `--sandbox read-only`, `--ephemeral`, and plugins disabled to prevent recursion. See [docs/architecture.md](docs/architecture.md).
+The child worker runs with fresh `HOME`, `USERPROFILE`, `CODEX_HOME`, and temp roots. Only the existing `auth.json` is copied when API-key authentication is not in use; user Skills, plugins, MCP servers, configuration, and project files are not copied. Codex also receives `--ignore-user-config`, `--ignore-rules`, `--sandbox read-only`, `--ephemeral`, and plugins disabled to prevent recursion. See [docs/architecture.md](docs/architecture.md).
 
 ## Requirements
 
@@ -44,7 +49,7 @@ The child worker runs in a fresh temporary directory with `--ignore-user-config`
 - Codex CLI available as `codex`, or `CODEX_SEARCH_BRIDGE_CODEX_BIN` set to its path.
 - A valid Codex authentication session or OpenAI API configuration with available quota.
 - Live Web Search allowed by the account and workspace policy.
-- An external model that can reliably call MCP tools.
+- An external model that can reliably call either MCP tools or Codex's standard command tools.
 
 ## Install
 
@@ -76,6 +81,43 @@ npm ci
 npm run build
 npm run doctor
 ```
+
+### Local-provider compatibility mode
+
+Codex CLI 0.145.0 was observed to serialize installed MCP servers as `namespace` tools. Some OpenAI-compatible local providers, including the tested Ollama path, accept ordinary function tools but reject that tool type before the model gets a turn. Compatibility mode hides the MCP namespace and lets the bundled Skill call the exact same research engine through Codex's standard `exec_command` / `write_stdin` tools.
+
+macOS or Linux:
+
+```bash
+CODEX_SEARCH_BRIDGE_CLI_ONLY=1 codex --oss --local-provider ollama -m <model>
+```
+
+If the outer Codex task uses `workspace-write`, its command sandbox must also be allowed to reach the Codex service used by the nested research worker:
+
+```bash
+CODEX_SEARCH_BRIDGE_CLI_ONLY=1 codex \
+  -s workspace-write \
+  -c 'sandbox_workspace_write.network_access=true' \
+  --oss --local-provider ollama -m <model>
+```
+
+Windows PowerShell:
+
+```powershell
+$env:CODEX_SEARCH_BRIDGE_CLI_ONLY = "1"
+codex --oss --local-provider ollama -m <model>
+```
+
+For PowerShell with a network-enabled workspace sandbox:
+
+```powershell
+codex -s workspace-write -c 'sandbox_workspace_write.network_access=true' `
+  --oss --local-provider ollama -m <model>
+```
+
+The Skill resolves its packaged `scripts/research.mjs`, starts it with an interactive stdin but without embedding data in the command, waits for `CODEX_SEARCH_BRIDGE_READY`, and sends one bounded JSON request over stdin. It then polls the same session after `CODEX_SEARCH_BRIDGE_RESEARCHING_POLL_SESSION`; neither marker nor PTY input echo is a result. No question is placed on a command line. The same input validation, isolated Codex workers, live-search evidence, restricted page opens, content audit, and result verifier run in both modes.
+
+Enabling sandbox network access applies to every command the outer model runs in that task, so use a trusted model and a narrow working directory. This is a protocol fallback, not a way to manufacture tool-use ability. The outer model must still follow the Skill and reliably use Codex's standard command tools. If it answers that it cannot browse without attempting the runner, treat that model/version as incompatible and do not present its answer as current research.
 
 ## Tool API
 
@@ -121,7 +163,10 @@ This abbreviated example comes from the deterministic integration fixture, not a
     "status": "verified",
     "web_search_events": 1,
     "opened_page_events": 1,
-    "cited_sources_seen_in_events": 1,
+    "codex_open_page_events": 1,
+    "bridge_fetch_events": 0,
+    "content_audit_passes": 0,
+    "cited_sources_verified": 1,
     "total_cited_sources": 1
   },
   "limitations": []
@@ -138,13 +183,19 @@ Verified evidence is recorded with dates; a green unit test is not presented as 
 | Codex Desktop on macOS | Uses the same plugin system; full UI flow pending recorded verification |
 | Windows | Covered by GitHub Actions after publication; physical-machine verification not yet claimed |
 | Linux | CI compatibility target, not a primary launch promise |
-| External/open model | Requires MCP tool calling; individual models are verified separately |
+| External/open model | Requires reliable MCP or standard command-tool use; individual models are verified separately |
+| Ollama `qwen3:4b-instruct` + Codex CLI 0.145.0 | Negative test: the model did not invoke the runner even under an explicit command-tool prompt; autonomous Bridge use is not claimed |
+| Ollama `qwen3.5:4b` + Codex CLI 0.145.0 | Negative test: command tools worked, but the model did not reliably complete the runner protocol and once fabricated a result from a readiness marker |
+
+No external-model end-to-end success is claimed for v0.1.0. The MCP tool, CLI runner, isolated bundle, and authenticated Codex research path are verified independently; model-specific autonomous orchestration remains compatibility work.
 
 See `docs/verification/` for sanitized run evidence as it becomes available.
 
 ## Privacy and security
 
-Only the validated research request, time filters, language, and depth are forwarded to the isolated Codex worker. The Bridge does not intentionally forward the current project, conversation history, arbitrary environment variables, or external-model credentials.
+Only the validated research request, time filters, language, and depth are forwarded to the isolated Codex worker. The Bridge does not intentionally forward the current project, conversation history, arbitrary environment variables, user Skills, plugins, MCP configuration, or external-model credentials.
+
+The restricted page verifier accepts only credential-free HTTP(S), resolves and pins public IP addresses, rejects local/private/reserved ranges, revalidates every redirect, sends no cookies or authorization headers, limits redirects/time/body bytes, and reports failures as limitations. Its compact visible-text excerpts go to a second isolated Codex audit pass, which must search live again and correct or downgrade stale draft claims. The fetcher is not an independent search backend.
 
 The worker still sends the research request to the user's configured Codex service and consumes that user's quota. Web content is untrusted and can be malicious. Read [docs/security.md](docs/security.md) before deployment in a managed environment.
 

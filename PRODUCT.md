@@ -10,7 +10,7 @@ Developers, local-model experimenters, and AI-tool builders who run external or 
 
 ## Product Purpose
 
-Codex Search Bridge gives any MCP-capable model a narrow path to Codex native live-web research. Success means the model can search, open sources, distinguish publication dates from event dates, cite observed URLs, and expose uncertainty in the current conversation. The project must remain installable, inspectable, and honest about authentication, quota, platform verification, and model tool-calling limits.
+Codex Search Bridge exposes a narrow path from tool-capable external models to Codex native live-web research. Success means the model can search, open sources, distinguish publication dates from event dates, cite observed URLs, and expose uncertainty in the current conversation. The project must remain installable, inspectable, and honest about authentication, quota, platform verification, and model tool-calling limits.
 
 ## Brand Personality
 

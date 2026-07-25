@@ -2,21 +2,23 @@
 
 ![Codex Search Bridge 让可调用工具的模型获得可验证实时网页研究](assets/hero.svg)
 
-让 Codex 中任何**能够调用工具**的外部／开源模型获得可验证的实时网页研究能力。
+为 Codex 中**能够调用工具**的外部／开源模型提供可验证的实时网页研究通道。
 
 [English](README.md) · [架构](docs/architecture.md) · [安全](docs/security.md)
 
 > **非官方 community 社区项目。** 本项目不隶属于 OpenAI，也未获得 OpenAI 官方背书。它使用用户现有的 Codex 安装、Codex authentication、联网权限和 quota 配额。
 
-外部模型运行在 Codex Desktop 或 Codex CLI 里，只需调用一个 `research_web` MCP 工具。Bridge 会启动隔离的 Codex 原生实时搜索任务，检查真实搜索和网页打开事件，再把带来源、日期、冲突与未确认标记的结果返回当前对话。
+外部模型运行在 Codex Desktop 或 Codex CLI 里，只需调用一个 `research_web` MCP 工具。Bridge 会启动隔离的 Codex 原生实时搜索任务，核验真实搜索和引用 URL，再把带来源、日期、冲突与未确认标记的结果返回当前对话。如果当前 Codex 版本没有暴露带 URL 的原生网页打开事件，Bridge 会用受限 HTTP(S) 验证器直接打开引用页面，但绝不替换成另一套搜索引擎。
 
 它不能让完全不支持 MCP／函数调用的模型凭空获得工具能力。
 
 ## 它实际证明什么
 
 - 捕获到了已完成的实时 `web_search_events`。
-- 标准／深度研究捕获到了 `opened_page_events`，对应 `open_page` 网页动作。
-- 引用的 URL 出现在 Codex 真实事件流中。
+- 标准／深度研究至少有一次可归因的网页打开。
+- `codex_open_page_events` 与 `bridge_fetch_events` 分别说明是谁打开页面，两者之和为 `opened_page_events`。
+- `content_audit_passes` 证明受限直连取得的页面正文已经由第二个隔离、再次实时搜索的 Codex Worker 复核。
+- 引用 URL 必须匹配带 URL 的 Codex 证据，或由 Bridge 受限直连成功打开。
 - `published_at`（发布时间）、`updated_at`（更新时间）、`event_date`（事件日期）、`retrieved_at`（访问时间）互不混淆。
 - 无法支持的主张降级为 `unconfirmed`；来源冲突保留为 `conflicting`。
 - 输出包含 `as_of` 截止时间与限制说明。
@@ -29,13 +31,16 @@
 flowchart LR
     A["Codex Desktop / CLI 中的外部模型"] -->|"MCP research_web"| B["Codex Search Bridge"]
     B --> C["隔离的 codex --search Worker"]
-    C --> D["实时搜索 + open_page"]
-    D --> E["JSONL 事件 + 结构化结果"]
+    C --> D["Codex 原生实时搜索"]
+    D --> E["JSONL 搜索／原生打开证据"]
+    D --> G["结构化引用 URL"]
+    G --> H["受限 HTTP(S) 页面验证器"]
     E --> F["URL、日期和主张验证"]
+    H --> F
     F --> A
 ```
 
-子任务使用全新临时目录，并启用 `--ignore-user-config`、`--ignore-rules`、`--sandbox read-only`、`--ephemeral`，同时禁用插件防止递归。细节见 [docs/architecture.md](docs/architecture.md)。
+子任务使用全新的 `HOME`、`USERPROFILE`、`CODEX_HOME` 和临时目录。使用非 API Key 认证时只复制现有 `auth.json`，不复制用户 Skills、插件、MCP、配置或项目文件；同时启用 `--ignore-user-config`、`--ignore-rules`、`--sandbox read-only`、`--ephemeral`，并禁用插件防止递归。细节见 [docs/architecture.md](docs/architecture.md)。
 
 ## 使用条件
 
@@ -44,7 +49,7 @@ flowchart LR
 - `codex` CLI 可直接执行，或设置 `CODEX_SEARCH_BRIDGE_CODEX_BIN`。
 - 已完成 Codex authentication，并有可用 quota。
 - 账户和工作区允许实时 Web Search。
-- 当前外部模型能够可靠调用 MCP 工具。
+- 当前外部模型能够可靠调用 MCP，或可靠使用 Codex 标准命令工具。
 
 ## 安装
 
@@ -75,6 +80,43 @@ npm ci
 npm run build
 npm run doctor
 ```
+
+### 本地模型兼容模式
+
+实测 Codex CLI 0.145.0 会把已安装的 MCP Server 序列化为 `namespace` 工具；部分 OpenAI-compatible 本地 Provider（包括本次 Ollama 路径）只接受普通函数工具，会在模型开始回答前拒绝这种工具类型。兼容模式会隐藏 MCP namespace，由捆绑 Skill 通过 Codex 标准 `exec_command`／`write_stdin` 工具调用同一套研究引擎。
+
+macOS／Linux：
+
+```bash
+CODEX_SEARCH_BRIDGE_CLI_ONLY=1 codex --oss --local-provider ollama -m <model>
+```
+
+如果外层 Codex 任务使用 `workspace-write`，还须允许命令沙箱访问内层研究 Worker 所需的 Codex 服务：
+
+```bash
+CODEX_SEARCH_BRIDGE_CLI_ONLY=1 codex \
+  -s workspace-write \
+  -c 'sandbox_workspace_write.network_access=true' \
+  --oss --local-provider ollama -m <model>
+```
+
+Windows PowerShell：
+
+```powershell
+$env:CODEX_SEARCH_BRIDGE_CLI_ONLY = "1"
+codex --oss --local-provider ollama -m <model>
+```
+
+PowerShell 的 network-enabled workspace sandbox：
+
+```powershell
+codex -s workspace-write -c 'sandbox_workspace_write.network_access=true' `
+  --oss --local-provider ollama -m <model>
+```
+
+Skill 会解析插件内的 `scripts/research.mjs`，用可交互 stdin 启动进程但不把数据嵌入命令，等待 `CODEX_SEARCH_BRIDGE_READY`，再通过 stdin 发送一行有大小限制的 JSON；看到 `CODEX_SEARCH_BRIDGE_RESEARCHING_POLL_SESSION` 后必须继续轮询同一会话，两个状态标记和 TTY 输入回显都不是结果。研究问题不会进入命令行。MCP 与兼容模式共用输入校验、隔离 Codex Worker、实时搜索证据、受限网页打开、二次内容审计和最终 Verifier。
+
+开启沙箱网络会作用于该任务中外层模型执行的所有命令，因此应使用可信模型和范围尽量小的工作目录。这只是 Provider 协议兼容层，不会凭空创造模型的工具能力。外层模型仍须遵循 Skill，并可靠调用 Codex 标准命令工具。如果模型在没有尝试 runner 的情况下直接回答“不能联网”，应把该模型／版本判定为不兼容，不能把它的回答包装成实时研究。
 
 ## 工具参数
 
@@ -110,7 +152,10 @@ npm run doctor
     "status": "verified",
     "web_search_events": 1,
     "opened_page_events": 1,
-    "cited_sources_seen_in_events": 1,
+    "codex_open_page_events": 1,
+    "bridge_fetch_events": 0,
+    "content_audit_passes": 0,
+    "cited_sources_verified": 1,
     "total_cited_sources": 1
   },
   "limitations": []
@@ -127,13 +172,19 @@ npm run doctor
 | macOS Codex Desktop | 共用插件系统；完整 UI 流程仍需保存验证记录 |
 | Windows | GitHub 发布后由 Actions 覆盖；尚不声称完成 Windows 实机验证 |
 | Linux | CI 兼容目标，不是首发主承诺 |
-| 外部／开源模型 | 必须支持 MCP；各模型分别验证 |
+| 外部／开源模型 | 必须可靠调用 MCP 或标准命令工具；各模型分别验证 |
+| Ollama `qwen3:4b-instruct` + Codex CLI 0.145.0 | 负向实测：即使给出精确命令工具提示，模型仍未调用 runner；不声称可自主使用 Bridge |
+| Ollama `qwen3.5:4b` + Codex CLI 0.145.0 | 负向实测：能调用命令工具，但未可靠完成 runner 协议，并曾把 readiness 标记编造成结果 |
+
+v0.1.0 不声称已有外部模型端到端成功。MCP 工具、CLI runner、隔离打包产物和已认证 Codex 研究路径分别通过验证；特定模型的自主编排仍属于兼容性工作。
 
 验证记录保存在 `docs/verification/`。
 
 ## 隐私与安全
 
-Bridge 只向隔离 Worker 传递经过验证的问题、时间范围、语言和深度。它不会主动转发当前项目文件、完整对话历史、任意环境变量或外部模型凭据。
+Bridge 只向隔离 Worker 传递经过验证的问题、时间范围、语言和深度。它不会主动转发当前项目文件、完整对话历史、任意环境变量、用户 Skills、插件、MCP 配置或外部模型凭据。
+
+受限页面验证器只接受不含凭据的 HTTP(S) URL；它会解析并固定公网 IP，拒绝本地、私网和保留地址，每次重定向都重新核验，不发送 Cookie 或认证头，并限制重定向次数、超时与读取字节。它把压缩后的可见正文交给第二个隔离 Codex 审核任务；审核任务必须再次实时搜索，并纠正或降级过时草稿。失败会写入限制说明。该验证器不是第二个搜索后端。
 
 研究问题仍会发送给用户配置的 Codex 服务并消耗自己的 quota；网页内容属于不可信输入。部署到团队环境前请阅读 [docs/security.md](docs/security.md)。
 

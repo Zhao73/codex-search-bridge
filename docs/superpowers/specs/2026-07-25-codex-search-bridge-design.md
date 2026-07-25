@@ -7,6 +7,12 @@
 - 仓库名：`codex-search-bridge`
 - 产品描述：Give any tool-capable model in Codex verified live-web research.
 
+## 实施兼容性修订（2026-07-25）
+
+真实运行 Codex CLI 0.145.0 后确认：搜索动作会以带查询的 `search` 事件出现，但部分网页访问只发出不带 URL 的 `other` 动作。Bridge 不会猜测 `other` 的含义。v1 因而保留 Codex 作为唯一搜索后端，同时加入受限 HTTP(S) 页面验证器，仅用于打开 Worker 已引用、但缺少 URL 级原生打开证据的页面。可见正文会交给第二个隔离 Codex Worker 再次实时搜索并复核，避免搜索索引滞后把旧候选误报为“最新”。输出分别报告 `codex_open_page_events`、`bridge_fetch_events` 与 `content_audit_passes`，不得把 Bridge 直连描述为 Codex 原生打开。
+
+同一轮真实运行还确认 `--ignore-user-config` 不足以阻止全局 Skill 发现。Worker 因而使用全新的 `HOME`、`USERPROFILE`、`CODEX_HOME` 和临时目录；没有 API Key 时只复制 `auth.json`，不复制用户 Skills、插件、MCP 或配置。
+
 ## 1. 摘要
 
 Codex Search Bridge 是一个社区开源 Codex 插件。它让运行在 Codex Desktop 或 Codex CLI 中的外部模型，通过一个简单的 MCP 工具调用隔离的 Codex 搜索 Worker，使用 Codex 原生实时网页搜索能力完成以下工作：
@@ -18,7 +24,7 @@ Codex Search Bridge 是一个社区开源 Codex 插件。它让运行在 Codex D
 5. 由配套 Skill 在当前 Codex 对话中综合输出；
 6. 显式标记来源、置信度、未确认信息和来源冲突。
 
-第一版不建立第二套搜索引擎，也不依赖 Tavily、Exa、Firecrawl 或 SearXNG。唯一默认研究后端是用户已经登录的 Codex。这样项目兑现的是“让外部模型借用 Codex 的真实搜索能力”，而不是把另一个搜索 API 包装成 Codex 插件。
+第一版不建立第二套搜索引擎，也不依赖 Tavily、Exa、Firecrawl 或 SearXNG。唯一搜索后端是用户已经登录的 Codex。受限页面验证器不能搜索，只能打开 Codex Worker 已引用的 URL。这样项目兑现的是“让外部模型借用 Codex 的真实搜索能力”，而不是把另一个搜索 API 包装成 Codex 插件。
 
 ## 2. 范围和兼容承诺
 
@@ -67,8 +73,11 @@ flowchart LR
     A["外部模型<br/>Codex Desktop / CLI"] -->|"MCP: research_web"| B["Codex Search Bridge"]
     B --> C["隔离 Codex Worker"]
     C -->|"--search"| D["Codex 原生实时 Web Search"]
-    D --> E["搜索与网页打开事件"]
+    D --> E["搜索与原生网页打开事件"]
+    D --> I["结构化引用 URL"]
+    I --> J["受限 HTTP(S) 页面验证器"]
     E --> F["证据解析与验证"]
+    J --> F
     F --> G["结构化 ResearchResult"]
     G --> B
     B --> A
@@ -202,7 +211,10 @@ type ResearchResult = {
     status: "verified" | "partial" | "failed";
     web_search_events: number;
     opened_page_events: number;
-    cited_sources_seen_in_events: number;
+    codex_open_page_events: number;
+    bridge_fetch_events: number;
+    content_audit_passes: number;
+    cited_sources_verified: number;
     total_cited_sources: number;
   };
   limitations: string[];
@@ -237,7 +249,8 @@ codex --search
 
 - `--search` 使用 live Web Search，而非默认缓存模式。
 - `features.plugins=false` 防止 Worker 再加载本插件并发生递归。
-- `--ignore-user-config` 和 `--ignore-rules` 避免外部模型 Provider、个人 MCP、项目规则或 execpolicy 污染研究 Worker；认证状态仍由 Codex 自己管理。
+- 新建 `HOME`、`USERPROFILE`、`CODEX_HOME` 和临时根目录；无 API Key 时只复制 `auth.json`，从发现路径上隔离用户 Skills、插件、MCP 和配置。
+- `--ignore-user-config` 和 `--ignore-rules` 进一步避免外部模型 Provider、个人 MCP、项目规则或 execpolicy 污染研究 Worker。
 - `--sandbox read-only` 禁止 Worker 修改文件。
 - `--ephemeral` 不持久化 Worker 会话。
 - 新临时目录避免 Worker接触调用者项目。
@@ -270,15 +283,16 @@ codex --search
 
 Verifier 必须从 JSONL 中观察到至少一个真实 `web_search` 事件，否则 `verification.status` 为 `failed`，即使最终文本声称已搜索。
 
-`standard` 和 `deep` 还要求出现页面打开证据。若当前 Codex 版本只发出可证明网页访问的等价事件，Parser 可以通过版本化适配器识别；未知事件类型不得被自动当作成功。
+`standard` 和 `deep` 还要求出现页面打开证据。带 URL 的 Codex 原生动作计入 `codex_open_page_events`；缺少这种证据时，Bridge 只能对 Worker 已引用的 URL 执行受限直连，成功后计入 `bridge_fetch_events`。两者之和为 `opened_page_events`。未知事件类型和 `other` 不得被自动当作成功。
 
 ### 8.2 URL 证明
 
-1. 从搜索和页面打开事件中提取 URL。
+1. 从搜索和带 URL 的原生页面打开事件中提取 URL。
 2. 去除 URL fragment、规范化主机大小写、默认端口和可安全移除的追踪参数。
 3. 从 Worker 输出的 `sources` 提取 URL。
-4. 只有与事件 URL 匹配的来源才能设置 `provenance_verified=true`。
-5. 最终来源全部无法匹配时，整体验证失败；部分匹配时状态为 `partial`。
+4. 对仍缺少打开证据的引用 URL 执行受限 HTTP(S) 请求：拒绝凭据、私网／本地／保留 IP，固定 DNS 地址，每次重定向重新验证，并限制次数、时间与读取字节。
+5. 只有与原生 URL 证据匹配，或由受限验证器成功打开的来源，才能设置 `provenance_verified=true`。
+6. 最终来源全部无法匹配时，整体验证失败；部分匹配时状态为 `partial`。
 
 重定向后的 canonical URL 可被接受，但必须保留原始观察 URL 与最终 URL 的内部映射供调试，不在默认对话输出中泄露无关查询参数。
 
@@ -469,7 +483,7 @@ Skill 的最终回答模板：
 
 ## 16. 验收标准
 
-v1 只有同时满足以下条件才可发布：
+稳定版 v1 只有同时满足以下条件才可发布。v0.1.0 可作为明确标注的 preview 发布，但任何尚未满足的条目必须在 README、验证记录和 Release Notes 中保持未验证，不得转写成成功：
 
 1. 插件可从 GitHub marketplace 安装到当前 Codex CLI。
 2. `doctor` 在已登录环境中能证明实时搜索和结构化输出可用。
@@ -483,6 +497,8 @@ v1 只有同时满足以下条件才可发布：
 10. Windows 与 macOS 自动化测试通过；至少一个平台完成真实端到端验证，另一个平台在发布说明中如实标注真实验证状态。
 11. 安装失败、未登录、Web Search 被禁用和 Worker 超时都有明确诊断。
 12. README 不出现“所有模型无条件支持”或“OpenAI 官方插件”等误导表述。
+
+截至 2026-07-25，条目 9 仍未满足：两个 4B 本地模型的自主调用为负向结果，9B 测试因主机资源压力中止。v0.1.0 因此只发布经过分别验证的 Bridge 通道与 Codex 研究能力，不声称任何具体外部模型已完成端到端成功；稳定版门槛不因此降低。
 
 ## 17. 开源发布与宣传
 

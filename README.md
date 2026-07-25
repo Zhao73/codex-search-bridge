@@ -1,5 +1,9 @@
 # Codex Search Bridge
 
+[![CI](https://github.com/Zhao73/codex-search-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/Zhao73/codex-search-bridge/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Zhao73/codex-search-bridge)](https://github.com/Zhao73/codex-search-bridge/releases)
+[![License](https://img.shields.io/github/license/Zhao73/codex-search-bridge)](LICENSE)
+
 ![Codex Search Bridge connects tool-capable models to verified live-web research](assets/hero.svg)
 
 Bring verified live-web research to **tool-capable** models in Codex.
@@ -179,17 +183,17 @@ Verified evidence is recorded with dates; a green unit test is not presented as 
 
 | Surface | Current state as of 2026-07-25 |
 |---|---|
-| Codex CLI 0.145.0 on macOS | Local marketplace install and MCP integration tested |
+| Codex CLI 0.145.0 on macOS | Local marketplace install, MCP integration, authenticated research, and content audit tested |
 | Codex Desktop on macOS | Uses the same plugin system; full UI flow pending recorded verification |
-| Windows | Covered by GitHub Actions after publication; physical-machine verification not yet claimed |
-| Linux | CI compatibility target, not a primary launch promise |
+| Windows | GitHub Actions passed on Node 20/22; physical-machine verification not claimed |
+| Linux | GitHub Actions passed on Node 20/22; not a primary launch promise |
 | External/open model | Requires reliable MCP or standard command-tool use; individual models are verified separately |
 | Ollama `qwen3:4b-instruct` + Codex CLI 0.145.0 | Negative test: the model did not invoke the runner even under an explicit command-tool prompt; autonomous Bridge use is not claimed |
 | Ollama `qwen3.5:4b` + Codex CLI 0.145.0 | Negative test: command tools worked, but the model did not reliably complete the runner protocol and once fabricated a result from a readiness marker |
 
 No external-model end-to-end success is claimed for v0.1.0. The MCP tool, CLI runner, isolated bundle, and authenticated Codex research path are verified independently; model-specific autonomous orchestration remains compatibility work.
 
-See `docs/verification/` for sanitized run evidence as it becomes available.
+See [docs/verification/](docs/verification/) for sanitized live evidence and the public CI record.
 
 ## Privacy and security
 

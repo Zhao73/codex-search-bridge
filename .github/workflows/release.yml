@@ -32,13 +32,20 @@ jobs:
           (cd artifacts && sha256sum *.tar.gz *.zip > SHA256SUMS.txt)
           rm -rf artifacts/stage
       - name: Create GitHub release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create "$GITHUB_REF_NAME"
-          artifacts/codex-search-bridge-*.tar.gz
-          artifacts/codex-search-bridge-*.zip
-          artifacts/SHA256SUMS.txt
-          --verify-tag
-          --title "Codex Search Bridge $GITHUB_REF_NAME"
-          --generate-notes
+        run: |
+          notes_file="docs/launch/release-${GITHUB_REF_NAME}.md"
+          if [[ -f "$notes_file" ]]; then
+            notes_args=(--notes-file "$notes_file")
+          else
+            notes_args=(--generate-notes)
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            artifacts/codex-search-bridge-*.tar.gz \
+            artifacts/codex-search-bridge-*.zip \
+            artifacts/SHA256SUMS.txt \
+            --verify-tag \
+            --title "Codex Search Bridge $GITHUB_REF_NAME" \
+            "${notes_args[@]}"

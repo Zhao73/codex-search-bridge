@@ -1,5 +1,9 @@
 # Codex Search Bridge
 
+[![CI](https://github.com/Zhao73/codex-search-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/Zhao73/codex-search-bridge/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Zhao73/codex-search-bridge)](https://github.com/Zhao73/codex-search-bridge/releases)
+[![License](https://img.shields.io/github/license/Zhao73/codex-search-bridge)](LICENSE)
+
 ![Codex Search Bridge 让可调用工具的模型获得可验证实时网页研究](assets/hero.svg)
 
 为 Codex 中**能够调用工具**的外部／开源模型提供可验证的实时网页研究通道。
@@ -168,17 +172,17 @@ Skill 会解析插件内的 `scripts/research.mjs`，用可交互 stdin 启动�
 
 | 使用面 | 截至 2026-07-25 的状态 |
 |---|---|
-| macOS + Codex CLI 0.145.0 | 已验证本地 Marketplace 安装及 MCP 集成 |
+| macOS + Codex CLI 0.145.0 | 已验证本地 Marketplace、MCP、认证搜索和内容审计 |
 | macOS Codex Desktop | 共用插件系统；完整 UI 流程仍需保存验证记录 |
-| Windows | GitHub 发布后由 Actions 覆盖；尚不声称完成 Windows 实机验证 |
-| Linux | CI 兼容目标，不是首发主承诺 |
+| Windows | GitHub Actions 的 Node 20/22 已通过；不声称完成 Windows 实机验证 |
+| Linux | GitHub Actions 的 Node 20/22 已通过；不是首发主承诺 |
 | 外部／开源模型 | 必须可靠调用 MCP 或标准命令工具；各模型分别验证 |
 | Ollama `qwen3:4b-instruct` + Codex CLI 0.145.0 | 负向实测：即使给出精确命令工具提示，模型仍未调用 runner；不声称可自主使用 Bridge |
 | Ollama `qwen3.5:4b` + Codex CLI 0.145.0 | 负向实测：能调用命令工具，但未可靠完成 runner 协议，并曾把 readiness 标记编造成结果 |
 
 v0.1.0 不声称已有外部模型端到端成功。MCP 工具、CLI runner、隔离打包产物和已认证 Codex 研究路径分别通过验证；特定模型的自主编排仍属于兼容性工作。
 
-验证记录保存在 `docs/verification/`。
+验证记录与公开 CI 链接保存在 [docs/verification/](docs/verification/)。
 
 ## 隐私与安全
 

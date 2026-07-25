@@ -30,7 +30,7 @@ describe("promotional assets", () => {
     const svg = await asset("social-card.svg");
     expect(svg).toContain("UNOFFICIAL COMMUNITY PROJECT");
     expect(svg).toContain("TOOL-CAPABLE MODEL");
-    expect(svg).toContain("LIVE WEB");
+    expect(svg).toContain("VERIFIED LIVE-WEB");
   });
 
   it("renders an exact 1200 by 630 social PNG", async () => {

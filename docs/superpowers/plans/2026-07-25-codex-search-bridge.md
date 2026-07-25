@@ -537,7 +537,7 @@ git commit -m "docs: add visual identity and launch kit"
 - Modify: `README.md`
 - Modify: `README.zh-CN.md`
 
-- [ ] **Step 1: Run the full clean verification suite**
+- [x] **Step 1: Run the full clean verification suite**
 
 Run:
 
@@ -549,15 +549,15 @@ git status --short
 
 Expected: all tests/build checks pass and the only changes are intentional verification artifacts created after this command.
 
-- [ ] **Step 2: Run the real doctor**
+- [x] **Step 2: Run the real doctor**
 
 Run the bundled server's `--doctor` mode with the authenticated Codex 0.145.0 installation. Capture only sanitized status, versions, event counts, timestamps, and error codes.
 
-- [ ] **Step 3: Run a time-sensitive real research query**
+- [x] **Step 3: Run a time-sensitive real research query**
 
 Choose a public event from the last 24 hours. Require `standard` depth. Save the structured result and verify manually that source URLs open, publication dates exist when claimed, event dates are independently supported, and unconfirmed facts are not presented as confirmed.
 
-- [ ] **Step 4: Verify JSONL evidence independently**
+- [x] **Step 4: Verify JSONL evidence independently**
 
 Confirm at least one live `web_search` event, at least one attributable page open, and source URL intersection. Record exact `codex_open_page_events` and `bridge_fetch_events` counts plus retrieval time in the verification document.
 
@@ -578,7 +578,7 @@ Run Codex CLI using one configured external model known to support MCP tools. As
 
 Observed: `qwen3:4b-instruct` and `qwen3.5:4b` were negative; a `qwen3.5:9b` probe was stopped because of unacceptable host pressure before an outcome. Public documentation explicitly claims no external-model end-to-end success for v0.1.0 and preserves the detailed negative evidence. Per this step's fallback, publication continues without a positive model claim.
 
-- [ ] **Step 6: Re-run checks and commit evidence**
+- [x] **Step 6: Re-run checks and commit evidence**
 
 Run: `npm run check`
 
@@ -597,36 +597,44 @@ git commit -m "test: document verified live-search workflow"
 - Modify if necessary: repository metadata and release notes
 - Create through GitHub: public repository, Actions runs, v0.1.0 release
 
-- [ ] **Step 1: Audit every acceptance criterion against authoritative evidence**
+- [x] **Step 1: Audit every acceptance criterion against authoritative evidence**
 
 Create a checklist from section 16 of the design specification. For each item, link a test, command output, installed plugin state, verification document, rendered asset, or public GitHub state. Any unsupported item remains incomplete and must be fixed or explicitly narrowed in public compatibility claims.
 
-- [ ] **Step 2: Verify GitHub authentication and repository-name availability**
+- [x] **Step 2: Verify GitHub authentication and repository-name availability**
 
 Run: `gh auth status` and `gh repo view <authenticated-owner>/codex-search-bridge`.
 
 Expected: authenticated account identified. If the repository does not exist, create it; if it exists and is unrelated, stop before overwriting and use `codex-web-search-bridge` only after confirming the collision.
 
-- [ ] **Step 3: Create the public repository and push main**
+- [x] **Step 3: Create the public repository and push main**
 
 Use non-interactive GitHub CLI with description `Give any tool-capable model in Codex verified live-web research.` Add topics `codex`, `mcp`, `web-search`, `open-source`, `local-llm`, and `ai-agents`. Set the repository homepage only if a real project page exists.
 
-- [ ] **Step 4: Wait for and inspect GitHub Actions**
+- [x] **Step 4: Wait for and inspect GitHub Actions**
 
 Use `gh run list` and `gh run watch`. If any matrix job fails, inspect logs, reproduce locally when possible, fix, recommit, and push. Do not treat a partial green matrix as success.
 
-- [ ] **Step 5: Tag and publish v0.1.0**
+Final release-commit CI: [run 30145306223](https://github.com/Zhao73/codex-search-bridge/actions/runs/30145306223), with all six Windows/macOS/Ubuntu on Node 20/22 jobs passing.
+
+- [x] **Step 5: Tag and publish v0.1.0**
 
 After main CI is fully green, create signed or annotated tag `v0.1.0`, push it, verify the release workflow, and publish release notes containing install commands, verified platforms, known limitations, checksums, and the community-project notice.
 
-- [ ] **Step 6: Verify the public repository as a new user would**
+Published release: [v0.1.0](https://github.com/Zhao73/codex-search-bridge/releases/tag/v0.1.0). Release workflow: [run 30145365205](https://github.com/Zhao73/codex-search-bridge/actions/runs/30145365205).
+
+- [x] **Step 6: Verify the public repository as a new user would**
 
 Open the public GitHub page, inspect rendered README/hero/social preview, clone into a fresh temporary directory, follow the published installation steps, run `doctor`, and ensure the release artifact matches its checksum. Check that no secrets, local absolute paths, private emails in docs, or unredacted logs are present.
 
-- [ ] **Step 7: Publish the prepared launch text and report exact state**
+Verified from a fresh public clone and a fresh unauthenticated `CODEX_HOME`: marketplace add/install succeeded, the installed bundle listed `doctor` and `research_web`, unauthenticated remediation was correct, release archives matched published checksums, and the public README plus social preview rendered successfully.
+
+- [x] **Step 7: Publish the prepared launch text and report exact state**
 
 The repository and GitHub release are authorized external writes. Publishing to third-party communities is not implied by “GitHub 公开发布”; keep Hacker News/Reddit/other posts as ready-to-use drafts unless separately authorized. Report the repository URL, release URL, CI result, live-search evidence, verified platforms, unverified external-model/platform items, and exact commit/tag.
 
-- [ ] **Step 8: Mark the persistent goal complete only after the audit passes**
+Completed within the authorized GitHub scope. GitHub repository metadata, topics, README, release notes, release assets, and social preview are public. Third-party launch drafts remain unposted.
+
+- [x] **Step 8: Mark the persistent goal complete only after the audit passes**
 
 Run a final `git status`, test suite, GitHub Actions check, public clone smoke test, and requirement-by-requirement audit. Call `update_goal(status="complete")` only if coding, tests, visual promotion, public repository, and release are all proven complete.

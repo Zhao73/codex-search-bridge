@@ -11,9 +11,9 @@
   </g>
 
   <g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="-1.8">
-    <text x="58" y="166" fill="#F2F7F5" font-size="62">LET ANY</text>
-    <text x="58" y="235" fill="#22D3C5" font-size="62">TOOL-CAPABLE MODEL</text>
-    <text x="58" y="304" fill="#F2F7F5" font-size="62">SEARCH THE LIVE WEB.</text>
+    <text x="58" y="166" fill="#F2F7F5" font-size="56">VERIFIED LIVE-WEB</text>
+    <text x="58" y="235" fill="#F2F7F5" font-size="56">RESEARCH FOR</text>
+    <text x="58" y="304" fill="#22D3C5" font-size="56">TOOL-CAPABLE MODELS.</text>
   </g>
 
   <text x="62" y="362" fill="#9FB4AE" font-family="Arial, Helvetica, sans-serif" font-size="21">
@@ -42,7 +42,7 @@
 
       <circle cx="50" cy="182" r="9" fill="#22D3C5"/>
       <text x="80" y="179" fill="#F2F7F5" font-size="16" font-weight="700">OPEN</text>
-      <text x="80" y="203" fill="#9FB4AE" font-size="12">page URL observed</text>
+      <text x="80" y="203" fill="#9FB4AE" font-size="12">page access observed</text>
 
       <circle cx="50" cy="272" r="9" fill="#22D3C5"/>
       <text x="80" y="269" fill="#F2F7F5" font-size="16" font-weight="700">DATE</text>
@@ -50,7 +50,7 @@
 
       <circle cx="50" cy="362" r="9" fill="#22D3C5"/>
       <text x="80" y="359" fill="#F2F7F5" font-size="16" font-weight="700">SOURCE</text>
-      <text x="80" y="383" fill="#9FB4AE" font-size="12">URL matched</text>
+      <text x="80" y="383" fill="#9FB4AE" font-size="12">URL verified</text>
 
       <circle cx="50" cy="452" r="9" fill="#22D3C5"/>
       <rect x="80" y="430" width="118" height="38" fill="#22D3C5"/>

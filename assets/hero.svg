@@ -11,9 +11,9 @@
   </g>
 
   <g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="-2">
-    <text x="72" y="196" fill="#F2F7F5" font-size="76">ANY TOOL-CAPABLE</text>
-    <text x="72" y="280" fill="#F2F7F5" font-size="76">MODEL CAN SEARCH</text>
-    <text x="72" y="364" fill="#22D3C5" font-size="76">THE LIVE WEB.</text>
+    <text x="72" y="196" fill="#F2F7F5" font-size="64">VERIFIED LIVE-WEB</text>
+    <text x="72" y="280" fill="#F2F7F5" font-size="64">RESEARCH FOR</text>
+    <text x="72" y="364" fill="#22D3C5" font-size="64">TOOL-CAPABLE MODELS.</text>
   </g>
 
   <text x="76" y="430" fill="#9FB4AE" font-family="Arial, Helvetica, sans-serif" font-size="24">
@@ -42,7 +42,7 @@
 
       <circle cx="58" cy="198" r="11" fill="#22D3C5"/>
       <text x="94" y="195" fill="#F2F7F5" font-size="19" font-weight="700">OPEN_PAGE</text>
-      <text x="94" y="220" fill="#9FB4AE" font-size="14">source URL observed</text>
+      <text x="94" y="220" fill="#9FB4AE" font-size="14">source access observed</text>
 
       <circle cx="58" cy="292" r="11" fill="#22D3C5"/>
       <text x="94" y="289" fill="#F2F7F5" font-size="19" font-weight="700">VERIFY_DATES</text>
@@ -51,7 +51,7 @@
 
       <circle cx="58" cy="386" r="11" fill="#22D3C5"/>
       <text x="94" y="383" fill="#F2F7F5" font-size="19" font-weight="700">MATCH_SOURCE</text>
-      <text x="94" y="408" fill="#9FB4AE" font-size="14">URL present in event stream</text>
+      <text x="94" y="408" fill="#9FB4AE" font-size="14">native or Bridge URL proof</text>
 
       <circle cx="58" cy="484" r="11" fill="#22D3C5"/>
       <rect x="94" y="458" width="134" height="42" fill="#22D3C5"/>

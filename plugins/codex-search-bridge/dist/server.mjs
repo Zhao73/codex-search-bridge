@@ -32703,13 +32703,23 @@ var CLAUDE_REDIRECT_KEYS = [
   "CLAUDE_CODE_USE_VERTEX"
 ];
 function stripClaudeRedirects(environment) {
-  const result = { ...environment };
-  const usesGateway = (result.ANTHROPIC_BASE_URL ?? "").trim().length > 0;
-  for (const key of CLAUDE_REDIRECT_KEYS) {
-    delete result[key];
-  }
-  if (usesGateway) {
-    delete result.ANTHROPIC_API_KEY;
+  const redirects = new Set(
+    CLAUDE_REDIRECT_KEYS.map((key) => key.toLowerCase())
+  );
+  const entries = Object.entries(environment);
+  const usesGateway = entries.some(
+    ([key, value]) => key.toLowerCase() === "anthropic_base_url" && (value ?? "").trim().length > 0
+  );
+  const result = {};
+  for (const [key, value] of entries) {
+    const normalized = key.toLowerCase();
+    if (redirects.has(normalized)) {
+      continue;
+    }
+    if (usesGateway && normalized === "anthropic_api_key") {
+      continue;
+    }
+    result[key] = value;
   }
   return result;
 }
@@ -33477,8 +33487,12 @@ var CLAUDE_ENVIRONMENT_KEYS = [
   // Claude Code resolves the macOS Keychain entry for the logged-in account
   // from USER. Without it the worker reports "Not logged in" even though the
   // user has a valid session, so this is load-bearing, not cosmetic.
+  // LOGNAME and USERNAME are the Linux and Windows equivalents.
   "USER",
   "LOGNAME",
+  "USERNAME",
+  "HOMEDRIVE",
+  "HOMEPATH",
   "ANTHROPIC_API_KEY",
   "LANG",
   "LC_ALL",

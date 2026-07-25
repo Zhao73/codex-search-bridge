@@ -1,12 +1,13 @@
 import type { Depth, ResearchResult } from "./contracts.js";
 import type { CodexEvidence } from "./jsonl-events.js";
 import { BridgeError } from "./errors.js";
+import type { EvidenceTier, ProviderId } from "./providers.js";
 import { matchObservedUrl } from "./url-evidence.js";
 
 const UNSUPPORTED_CLAIM_NOTE =
-  "No cited source for this claim was observed in the Codex web event stream.";
+  "No cited source for this claim was observed in the provider web event stream.";
 const UNOBSERVED_SOURCE_LIMITATION =
-  "One or more cited source URLs were not observed in the Codex web event stream.";
+  "One or more cited source URLs were not observed in the provider web event stream.";
 const DEEP_SOURCE_LIMITATION =
   "One or more confirmed deep-research claims cite fewer than two independent sources.";
 
@@ -21,11 +22,19 @@ function combineNote(existing: string | undefined, addition: string): string {
   return existing.includes(addition) ? existing : `${existing} ${addition}`;
 }
 
+export type VerificationContext = {
+  depth: Depth;
+  provider: ProviderId;
+  evidenceTier: EvidenceTier;
+};
+
 export function verifyResearchResult(
   input: ResearchResult,
   evidence: CodexEvidence,
-  depth: Depth,
+  context: VerificationContext,
 ): ResearchResult {
+  const { depth, provider, evidenceTier } = context;
+
   if (evidence.webSearchEvents < 1) {
     throw new BridgeError(
       "EVIDENCE_VERIFICATION_FAILED",
@@ -38,7 +47,14 @@ export function verifyResearchResult(
       "Standard and deep research require open-page evidence.",
     );
   }
-  if (evidence.bridgeFetchEvents > 0 && evidence.contentAuditPasses < 1) {
+  // A content audit reconciles directly fetched text through a second isolated
+  // agent worker. The search-API tier has no agent at all, so it cannot satisfy
+  // this rule and is instead capped at `partial` below.
+  if (
+    evidenceTier !== "search_api" &&
+    evidence.bridgeFetchEvents > 0 &&
+    evidence.contentAuditPasses < 1
+  ) {
     throw new BridgeError(
       "EVIDENCE_VERIFICATION_FAILED",
       "Directly fetched page evidence requires a completed content-audit pass.",
@@ -59,7 +75,7 @@ export function verifyResearchResult(
   if (sources.length === 0 || verifiedSourceIds.size === 0) {
     throw new BridgeError(
       "EVIDENCE_VERIFICATION_FAILED",
-      "No cited source URL matched the Codex web event stream.",
+      "No cited source URL matched the provider web event stream.",
     );
   }
 
@@ -108,7 +124,7 @@ export function verifyResearchResult(
   if (evidence.unknownEventTypes.length > 0) {
     limitations = addUnique(
       limitations,
-      `Ignored unknown Codex event types: ${evidence.unknownEventTypes.join(", ")}.`,
+      `Ignored unknown ${provider} event types: ${evidence.unknownEventTypes.join(", ")}.`,
     );
   }
   if (evidence.bridgeFetchFailures.length > 0) {
@@ -125,13 +141,20 @@ export function verifyResearchResult(
 
   const completeProvenance =
     verifiedSourceIds.size === sources.length && !claimWasDowngraded;
+  // `verified` means a model actually reconciled page text against the answer.
+  // The search-API tier never does that, so it can never claim more than
+  // `partial` no matter how clean the URL provenance looks.
+  const status =
+    completeProvenance && evidenceTier !== "search_api" ? "verified" : "partial";
 
   return {
     ...input,
     claims,
     sources,
     verification: {
-      status: completeProvenance ? "verified" : "partial",
+      status,
+      provider,
+      evidence_tier: evidenceTier,
       web_search_events: evidence.webSearchEvents,
       opened_page_events: evidence.openedPageEvents,
       codex_open_page_events: evidence.codexOpenPageEvents,

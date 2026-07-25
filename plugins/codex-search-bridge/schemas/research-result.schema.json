@@ -14,8 +14,13 @@
     "limitations"
   ],
   "properties": {
-    "answer": { "type": "string", "minLength": 1 },
-    "as_of": { "type": "string" },
+    "answer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "as_of": {
+      "type": "string"
+    },
     "query": {
       "type": "object",
       "additionalProperties": false,
@@ -29,14 +34,48 @@
         "language"
       ],
       "properties": {
-        "question": { "type": "string", "minLength": 1, "maxLength": 8000 },
-        "depth": { "enum": ["quick", "standard", "deep"] },
-        "max_sources": { "type": "integer", "minimum": 3, "maximum": 12 },
-        "recency_hours": { "type": ["integer", "null"], "minimum": 1, "maximum": 8760 },
-        "date_from": { "type": ["string", "null"] },
-        "date_to": { "type": ["string", "null"] },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "depth": {
+          "enum": [
+            "quick",
+            "standard",
+            "deep"
+          ]
+        },
+        "max_sources": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 12
+        },
+        "recency_hours": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 8760
+        },
+        "date_from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date_to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "language": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
         }
       }
@@ -46,17 +85,60 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "claim", "status", "confidence", "event_date", "source_ids", "note"],
+        "required": [
+          "id",
+          "claim",
+          "status",
+          "confidence",
+          "event_date",
+          "source_ids",
+          "note"
+        ],
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "claim": { "type": "string", "minLength": 1 },
-          "status": {
-            "enum": ["confirmed", "partially_confirmed", "unconfirmed", "conflicting"]
+          "id": {
+            "type": "string",
+            "minLength": 1
           },
-          "confidence": { "enum": ["high", "moderate", "low", "unknown"] },
-          "event_date": { "type": ["string", "null"] },
-          "source_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-          "note": { "type": ["string", "null"], "minLength": 1 }
+          "claim": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "confirmed",
+              "partially_confirmed",
+              "unconfirmed",
+              "conflicting"
+            ]
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "moderate",
+              "low",
+              "unknown"
+            ]
+          },
+          "event_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          }
         }
       }
     },
@@ -77,15 +159,50 @@
           "updated_at"
         ],
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "url": { "type": "string" },
-          "title": { "type": "string", "minLength": 1 },
-          "publisher": { "type": ["string", "null"], "minLength": 1 },
-          "published_at": { "type": ["string", "null"] },
-          "updated_at": { "type": ["string", "null"] },
-          "retrieved_at": { "type": "string" },
-          "source_type": { "enum": ["primary", "secondary", "social", "unknown"] },
-          "provenance_verified": { "type": "boolean" }
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publisher": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "retrieved_at": {
+            "type": "string"
+          },
+          "source_type": {
+            "enum": [
+              "primary",
+              "secondary",
+              "social",
+              "unknown"
+            ]
+          },
+          "provenance_verified": {
+            "type": "boolean"
+          }
         }
       }
     },
@@ -94,6 +211,8 @@
       "additionalProperties": false,
       "required": [
         "status",
+        "provider",
+        "evidence_tier",
         "web_search_events",
         "opened_page_events",
         "codex_open_page_events",
@@ -103,16 +222,67 @@
         "total_cited_sources"
       ],
       "properties": {
-        "status": { "enum": ["verified", "partial", "failed"] },
-        "web_search_events": { "type": "integer", "minimum": 0 },
-        "opened_page_events": { "type": "integer", "minimum": 0 },
-        "codex_open_page_events": { "type": "integer", "minimum": 0 },
-        "bridge_fetch_events": { "type": "integer", "minimum": 0 },
-        "content_audit_passes": { "type": "integer", "minimum": 0 },
-        "cited_sources_verified": { "type": "integer", "minimum": 0 },
-        "total_cited_sources": { "type": "integer", "minimum": 0 }
+        "status": {
+          "enum": [
+            "verified",
+            "partial",
+            "failed"
+          ]
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude",
+            "tavily"
+          ],
+          "description": "Search backend that ran the query. Authored by the Bridge; the worker's value is discarded."
+        },
+        "evidence_tier": {
+          "type": "string",
+          "enum": [
+            "native_audited",
+            "native",
+            "search_api"
+          ],
+          "description": "How much of the evidence pipeline ran. Only native_audited may reach status verified."
+        },
+        "web_search_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "opened_page_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "codex_open_page_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bridge_fetch_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "content_audit_passes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cited_sources_verified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_cited_sources": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
-    "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
   }
 }

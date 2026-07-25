@@ -1,14 +1,43 @@
 {
   "name": "codex-search-bridge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Verified Codex live-web research for tool-capable external models.",
-  "private": true,
   "type": "module",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Zhao73",
+    "url": "https://github.com/Zhao73"
+  },
+  "homepage": "https://github.com/Zhao73/codex-search-bridge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zhao73/codex-search-bridge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zhao73/codex-search-bridge/issues"
+  },
+  "keywords": [
+    "codex",
+    "mcp",
+    "model-context-protocol",
+    "web-search",
+    "local-llm",
+    "research",
+    "claude-code"
+  ],
+  "bin": {
+    "codex-search-bridge": "dist/server.mjs"
+  },
+  "files": [
+    "dist",
+    "schemas"
+  ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "build": "npm run render:assets && tsup && node scripts/build-plugin.mjs",
+    "prepublishOnly": "npm run build",
     "check": "npm run typecheck && npm run test && npm run build && node scripts/check-dist.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

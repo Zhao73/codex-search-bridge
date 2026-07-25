@@ -261,3 +261,96 @@ describe("worker home isolation", () => {
     expect(await readdir(isolation.codexHomeDirectory)).toEqual(["auth.json"]);
   });
 });
+
+describe("ResearchRunner search-API path", () => {
+  function runnerWith(
+    capture: { options?: Record<string, unknown> },
+    environment: NodeJS.ProcessEnv = { TAVILY_API_KEY: "tvly-test" },
+  ): ResearchRunner {
+    return new ResearchRunner({
+      provider: "tavily",
+      environment,
+      availability: async () => ({
+        codex: false,
+        claude: false,
+        tavily: true,
+      }),
+      now: () => new Date("2026-07-25T03:00:00Z"),
+      timezone: "UTC",
+      searchApi: async (options) => {
+        capture.options = { ...options };
+        return {
+          answer: "Node 26 is current.",
+          results: [
+            { title: "Release", url: "https://nodejs.org/en/blog/release" },
+          ],
+        };
+      },
+      pageFetcher: async (urls) => ({
+        successes: urls.map((url) => ({
+          requestedUrl: url,
+          finalUrl: url,
+          statusCode: 200,
+          bytesRead: 64,
+          retrievedAt: "2026-07-25T03:00:00.000Z",
+          redirects: [],
+        })),
+        failures: [],
+      }),
+    });
+  }
+
+  it("returns a capped search-API result without spawning a worker", async () => {
+    const capture: { options?: Record<string, unknown> } = {};
+    const result = await runnerWith(capture).run({
+      question: "What is current?",
+      depth: "standard",
+      max_sources: 3,
+    });
+
+    expect(result.verification.provider).toBe("tavily");
+    expect(result.verification.evidence_tier).toBe("search_api");
+    expect(result.verification.status).toBe("partial");
+    expect(result.verification.bridge_fetch_events).toBe(1);
+    expect(capture.options?.maxResults).toBe(3);
+  });
+
+  it("converts an explicit date window into YYYY-MM-DD bounds", async () => {
+    const capture: { options?: Record<string, unknown> } = {};
+    await runnerWith(capture).run({
+      question: "What is current?",
+      depth: "standard",
+      max_sources: 3,
+      date_from: "2026-07-01",
+      date_to: "2026-07-20",
+    });
+
+    expect(capture.options?.startDate).toBe("2026-07-01");
+    expect(capture.options?.endDate).toBe("2026-07-20");
+  });
+
+  it("converts recency_hours into a day bound instead of dropping it", async () => {
+    const capture: { options?: Record<string, unknown> } = {};
+    await runnerWith(capture).run({
+      question: "What is current?",
+      depth: "standard",
+      max_sources: 3,
+      recency_hours: 48,
+    });
+
+    // 2026-07-25T03:00Z minus 48h lands on 2026-07-23.
+    expect(capture.options?.startDate).toBe("2026-07-23");
+    expect(String(capture.options?.startDate)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("fails clearly when the keyed provider has no API key", async () => {
+    const capture: { options?: Record<string, unknown> } = {};
+    await expect(
+      runnerWith(capture, {}).run({
+        question: "What is current?",
+        depth: "standard",
+        max_sources: 3,
+      }),
+    ).rejects.toThrow(/PROVIDER_UNAVAILABLE/);
+  });
+});

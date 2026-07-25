@@ -1,6 +1,6 @@
 {
   "name": "codex-search-bridge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Verified Codex live-web research for tool-capable external models.",
   "author": {
     "name": "Zhao73",
@@ -17,7 +17,7 @@
     "research"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
+  "mcpServers": "./codex.mcp.json",
   "interface": {
     "displayName": "Codex Search Bridge",
     "shortDescription": "Verified live-web research for external models",

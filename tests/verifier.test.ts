@@ -36,6 +36,8 @@ const baseResult: ResearchResult = {
   ],
   verification: {
     status: "failed",
+    provider: "codex",
+    evidence_tier: "native",
     web_search_events: 0,
     opened_page_events: 0,
     codex_open_page_events: 0,
@@ -72,7 +74,7 @@ describe("verifyResearchResult", () => {
       verifyResearchResult(
         baseResult,
         evidence({ webSearchEvents: 0 }),
-        "standard",
+        { depth: "standard", provider: "codex", evidenceTier: "native" },
       ),
     ).toThrowError(BridgeError);
   });
@@ -82,7 +84,7 @@ describe("verifyResearchResult", () => {
       verifyResearchResult(
         baseResult,
         evidence({ openedPageEvents: 0 }),
-        "standard",
+        { depth: "standard", provider: "codex", evidenceTier: "native" },
       ),
     ).toThrowError(/open-page evidence/i);
   });
@@ -97,7 +99,7 @@ describe("verifyResearchResult", () => {
           bridgeFetchEvents: 1,
           contentAuditPasses: 0,
         }),
-        "standard",
+        { depth: "standard", provider: "codex", evidenceTier: "native" },
       ),
     ).toThrowError(/content-audit/i);
   });
@@ -107,7 +109,7 @@ describe("verifyResearchResult", () => {
       verifyResearchResult(
         baseResult,
         evidence({ observedUrls: ["https://elsewhere.example/story"] }),
-        "standard",
+        { depth: "standard", provider: "codex", evidenceTier: "native" },
       ),
     ).toThrowError(/source URL/i);
   });
@@ -116,11 +118,13 @@ describe("verifyResearchResult", () => {
     const verified = verifyResearchResult(
       baseResult,
       evidence(),
-      "standard",
+      { depth: "standard", provider: "codex", evidenceTier: "native" },
     );
 
     expect(verified.verification).toEqual({
       status: "verified",
+      provider: "codex",
+      evidence_tier: "native",
       web_search_events: 1,
       opened_page_events: 1,
       codex_open_page_events: 1,
@@ -159,7 +163,11 @@ describe("verifyResearchResult", () => {
       ],
     };
 
-    const verified = verifyResearchResult(result, evidence(), "standard");
+    const verified = verifyResearchResult(result, evidence(), {
+      depth: "standard",
+      provider: "codex",
+      evidenceTier: "native",
+    });
 
     expect(verified.verification.status).toBe("partial");
     expect(verified.claims[1]).toMatchObject({
@@ -182,7 +190,11 @@ describe("verifyResearchResult", () => {
       ],
     };
 
-    const verified = verifyResearchResult(result, evidence(), "deep");
+    const verified = verifyResearchResult(result, evidence(), {
+      depth: "deep",
+      provider: "codex",
+      evidenceTier: "native",
+    });
 
     expect(verified.claims[0]).toMatchObject({
       status: "conflicting",

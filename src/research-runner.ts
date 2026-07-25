@@ -37,7 +37,26 @@ import {
   type FetchPagesOptions,
   type PageFetchSummary,
 } from "./page-fetch.js";
+import {
+  buildClaudeArgs,
+  extractJsonObject,
+  parseClaudeStream,
+  stripClaudeRedirects,
+} from "./claude-worker.js";
+import {
+  detectAvailability,
+  type EvidenceTier,
+  type ProviderId,
+  resolveProviderBinaries,
+  selectProvider,
+} from "./providers.js";
 import { buildAuditPrompt, buildResearchPrompt } from "./research-prompt.js";
+import {
+  buildTavilyEvidence,
+  buildTavilyResult,
+  tavilySearch,
+  type TavilyResponse,
+} from "./tavily.js";
 import { resolveTimeWindow } from "./time-window.js";
 import { matchObservedUrl } from "./url-evidence.js";
 import { verifyResearchResult } from "./verifier.js";
@@ -70,6 +89,77 @@ const ALLOWED_ENVIRONMENT_KEYS = [
   "ComSpec",
   "PATHEXT",
 ] as const;
+
+/**
+ * Claude Code authenticates from the user's own login rather than from an
+ * OPENAI_* key, so the Claude worker needs a different passthrough set.
+ * `ANTHROPIC_BASE_URL` is deliberately absent: a worker pointed at a
+ * third-party gateway would run an open-weight model with no server-side
+ * WebSearch tool, which is exactly the failure this provider exists to avoid.
+ */
+const CLAUDE_ENVIRONMENT_KEYS = [
+  "PATH",
+  "HOME",
+  "USERPROFILE",
+  // Claude Code resolves the macOS Keychain entry for the logged-in account
+  // from USER. Without it the worker reports "Not logged in" even though the
+  // user has a valid session, so this is load-bearing, not cosmetic.
+  "USER",
+  "LOGNAME",
+  "ANTHROPIC_API_KEY",
+  "LANG",
+  "LC_ALL",
+  "TMPDIR",
+  "TMP",
+  "TEMP",
+  "SystemRoot",
+  "ComSpec",
+  "PATHEXT",
+  "APPDATA",
+  "LOCALAPPDATA",
+] as const;
+
+/**
+ * Unlike the Codex worker, the Claude worker keeps the real HOME.
+ *
+ * Claude Code resolves its login from the user's config directory and, on
+ * macOS, the Keychain. Both a fresh HOME and an isolated `CLAUDE_CONFIG_DIR`
+ * make it report "Not logged in", which would break every subscription user.
+ * Isolation is therefore enforced on the command line instead — no MCP servers
+ * (`--strict-mcp-config`), no settings or hooks (`--setting-sources ""`), an
+ * allowlist limited to the two read-only web tools, and a throwaway cwd. Only
+ * the temp directory is redirected here.
+ */
+export function buildClaudeWorkerEnvironment(
+  source: NodeJS.ProcessEnv = process.env,
+  isolation?: WorkerIsolation,
+): NodeJS.ProcessEnv {
+  const result: NodeJS.ProcessEnv = {};
+  for (const key of CLAUDE_ENVIRONMENT_KEYS) {
+    if (
+      isolation !== undefined &&
+      (key === "TMPDIR" || key === "TMP" || key === "TEMP")
+    ) {
+      continue;
+    }
+    const value = source[key];
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  if (isolation !== undefined) {
+    result.TMPDIR = isolation.tempDirectory;
+    result.TMP = isolation.tempDirectory;
+    result.TEMP = isolation.tempDirectory;
+  }
+  // Drops a gateway key that would be rejected by the real Anthropic endpoint.
+  return stripClaudeRedirects({
+    ...result,
+    ...(source.ANTHROPIC_BASE_URL === undefined
+      ? {}
+      : { ANTHROPIC_BASE_URL: source.ANTHROPIC_BASE_URL }),
+  });
+}
 
 export type CodexArgumentOptions = {
   cwd: string;
@@ -153,6 +243,7 @@ function originalCodexHome(source: NodeJS.ProcessEnv): string | undefined {
 export async function prepareWorkerIsolation(
   taskDirectory: string,
   source: NodeJS.ProcessEnv = process.env,
+  provider: ProviderId = "codex",
 ): Promise<WorkerIsolation> {
   const homeDirectory = join(taskDirectory, "home");
   const codexHomeDirectory = join(taskDirectory, "codex-home");
@@ -162,6 +253,17 @@ export async function prepareWorkerIsolation(
     mkdir(codexHomeDirectory, { recursive: true, mode: 0o700 }),
     mkdir(tempDirectory, { recursive: true, mode: 0o700 }),
   ]);
+
+  // The Claude worker authenticates from the user's real config directory, so
+  // there is no auth material to stage into the task directory.
+  if (provider === "claude") {
+    return {
+      homeDirectory,
+      codexHomeDirectory,
+      tempDirectory,
+      authCopied: false,
+    };
+  }
 
   let authCopied = false;
   const codexHome = originalCodexHome(source);
@@ -214,6 +316,23 @@ export type ResearchRunnerOptions = {
   ) => Promise<PageFetchSummary>;
   environment?: NodeJS.ProcessEnv;
   queue?: WorkerQueue;
+  /** `codex`, `claude`, `tavily`, or `auto` (default). */
+  provider?: string;
+  claudeCommand?: string;
+  searchApi?: (options: {
+    apiKey: string;
+    question: string;
+    maxResults: number;
+    depth: "quick" | "standard" | "deep";
+    startDate?: string;
+    endDate?: string;
+    signal?: AbortSignal;
+  }) => Promise<TavilyResponse>;
+  availability?: () => Promise<{
+    codex: boolean;
+    claude: boolean;
+    tavily: boolean;
+  }>;
 };
 
 export type ResearchRunOptions = {
@@ -230,6 +349,7 @@ export function bindAuthoritativeMetadata(
   workerValue: unknown,
   input: ResearchWebInput,
   timestamp: string,
+  provider: ProviderId = "codex",
 ): unknown {
   const record = asObject(workerValue);
   if (record === undefined) {
@@ -263,8 +383,12 @@ export function bindAuthoritativeMetadata(
       ...(input.language === undefined ? {} : { language: input.language }),
     },
     sources,
+    // Always discarded and re-authored by the verifier; the worker never gets
+    // to grade its own evidence.
     verification: {
       status: "failed",
+      provider,
+      evidence_tier: provider === "tavily" ? "search_api" : "native",
       web_search_events: 0,
       opened_page_events: 0,
       codex_open_page_events: 0,
@@ -293,6 +417,10 @@ export class ResearchRunner {
   ) => Promise<PageFetchSummary>;
   readonly #environment: NodeJS.ProcessEnv;
   readonly #queue: WorkerQueue;
+  readonly #requestedProvider: string;
+  readonly #claudeCommand: string;
+  readonly #searchApi: NonNullable<ResearchRunnerOptions["searchApi"]>;
+  readonly #availability: NonNullable<ResearchRunnerOptions["availability"]>;
 
   constructor(options: ResearchRunnerOptions = {}) {
     this.#command =
@@ -310,6 +438,24 @@ export class ResearchRunner {
     this.#pageFetcher = options.pageFetcher ?? fetchPages;
     this.#environment = options.environment ?? process.env;
     this.#queue = options.queue ?? new WorkerQueue();
+    this.#requestedProvider =
+      options.provider ??
+      this.#environment.CODEX_SEARCH_BRIDGE_PROVIDER ??
+      "auto";
+    this.#claudeCommand =
+      options.claudeCommand ?? resolveProviderBinaries(this.#environment).claudeBin;
+    this.#searchApi = options.searchApi ?? tavilySearch;
+    // Detection must probe the commands this runner will actually spawn, not
+    // the bare names. A caller that injects an explicit `command` (tests, or a
+    // user pointing at a non-PATH install) would otherwise be told the
+    // provider is missing.
+    this.#availability =
+      options.availability ??
+      (() =>
+        detectAvailability(this.#environment, {
+          codexBin: this.#command,
+          claudeBin: this.#claudeCommand,
+        }));
   }
 
   async run(
@@ -329,14 +475,85 @@ export class ResearchRunner {
       });
     }
 
+    const provider = selectProvider(
+      await this.#availability(),
+      this.#requestedProvider,
+    );
+
     return this.#queue.run(
-      () => this.#runIsolated(input, options.signal),
+      () =>
+        provider === "tavily"
+          ? this.#runSearchApi(input, options.signal)
+          : this.#runIsolated(input, provider, options.signal),
       options.signal,
     );
   }
 
+  /**
+   * Search-API path: no agent worker exists, so the Bridge itself opens every
+   * cited page through the restricted verifier and the result is capped at the
+   * `search_api` evidence tier.
+   */
+  async #runSearchApi(
+    input: ResearchWebInput,
+    signal: AbortSignal | undefined,
+  ): Promise<ResearchResult> {
+    const apiKey = (this.#environment.TAVILY_API_KEY ?? "").trim();
+    if (apiKey.length === 0) {
+      throw new BridgeError(
+        "PROVIDER_UNAVAILABLE",
+        "The Tavily provider requires TAVILY_API_KEY.",
+      );
+    }
+
+    // Tavily filters on whole calendar days, so the resolved window collapses
+    // to YYYY-MM-DD bounds. An hour-level `recency_hours` therefore widens to
+    // its containing day rather than being dropped.
+    const now = this.#now();
+    const window = resolveTimeWindow(input, now);
+    const startDate = window.from ?? window.fromInstant?.slice(0, 10);
+    const endDate = window.to ?? window.toInstant?.slice(0, 10);
+
+    const response = await this.#searchApi({
+      apiKey,
+      question: input.question,
+      maxResults: input.max_sources,
+      depth: input.depth,
+      ...(startDate === undefined ? {} : { startDate }),
+      ...(endDate === undefined ? {} : { endDate }),
+      ...(signal === undefined ? {} : { signal }),
+    });
+
+    const fetchSummary = await this.#pageFetcher(
+      response.results.map((result) => result.url).slice(0, input.max_sources),
+      {
+        maxPages: input.max_sources,
+        ...(signal === undefined ? {} : { signal }),
+      },
+    );
+
+    const timestamp = this.#now().toISOString();
+    const draft = buildTavilyResult({
+      input,
+      response,
+      fetchSummary,
+      timestamp,
+    });
+    const evidence = mergePageFetchEvidence(
+      buildTavilyEvidence(response),
+      fetchSummary,
+    );
+
+    return verifyResearchResult(draft, evidence, {
+      depth: input.depth,
+      provider: "tavily",
+      evidenceTier: "search_api",
+    });
+  }
+
   async #runIsolated(
     input: ResearchWebInput,
+    provider: ProviderId,
     signal: AbortSignal | undefined,
   ): Promise<ResearchResult> {
     const taskDirectory = await mkdtemp(
@@ -348,12 +565,14 @@ export class ResearchRunner {
       const isolation = await prepareWorkerIsolation(
         taskDirectory,
         this.#environment,
+        provider,
       );
       const initial = await this.#runWorker({
         taskDirectory,
         isolation,
         input,
-        prompt: buildResearchPrompt(input, now, this.#timezone),
+        provider,
+        prompt: buildResearchPrompt(input, now, this.#timezone, provider),
         outputFilename: "research-result.json",
         metadataTimestamp: now.toISOString(),
         signal,
@@ -385,12 +604,14 @@ export class ResearchRunner {
           taskDirectory,
           isolation,
           input,
+          provider,
           prompt: buildAuditPrompt(
             input,
             result,
             fetchSummary,
             auditNow,
             this.#timezone,
+            provider,
           ),
           outputFilename: "audited-result.json",
           metadataTimestamp: auditNow.toISOString(),
@@ -433,7 +654,13 @@ export class ResearchRunner {
           provenance_verified: false,
         })),
       };
-      return verifyResearchResult(authoritativeResult, evidence, input.depth);
+      const evidenceTier: EvidenceTier =
+        evidence.contentAuditPasses > 0 ? "native_audited" : "native";
+      return verifyResearchResult(authoritativeResult, evidence, {
+        depth: input.depth,
+        provider,
+        evidenceTier,
+      });
     } finally {
       await rm(taskDirectory, { recursive: true, force: true });
     }
@@ -443,11 +670,45 @@ export class ResearchRunner {
     taskDirectory: string;
     isolation: WorkerIsolation;
     input: ResearchWebInput;
+    provider: ProviderId;
     prompt: string;
     outputFilename: string;
     metadataTimestamp: string;
     signal: AbortSignal | undefined;
   }): Promise<{ result: ResearchResult; evidence: CodexEvidence }> {
+    const { parsed, evidence } =
+      options.provider === "claude"
+        ? await this.#runClaudeWorker(options)
+        : await this.#runCodexWorker(options);
+
+    let result: ResearchResult;
+    try {
+      result = normalizeWorkerResult(
+        bindAuthoritativeMetadata(
+          parsed,
+          options.input,
+          options.metadataTimestamp,
+          options.provider,
+        ),
+      );
+    } catch (error) {
+      throw new BridgeError(
+        "INVALID_STRUCTURED_OUTPUT",
+        `The ${options.provider} research worker produced JSON that does not match the research schema.`,
+        { cause: error instanceof ZodError ? error.issues : error },
+      );
+    }
+    return { result, evidence };
+  }
+
+  async #runCodexWorker(options: {
+    taskDirectory: string;
+    isolation: WorkerIsolation;
+    input: ResearchWebInput;
+    prompt: string;
+    outputFilename: string;
+    signal: AbortSignal | undefined;
+  }): Promise<{ parsed: unknown; evidence: CodexEvidence }> {
     const outputPath = join(options.taskDirectory, options.outputFilename);
     const codexArgs = buildCodexArgs({
       cwd: options.taskDirectory,
@@ -467,36 +728,70 @@ export class ResearchRunner {
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
 
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(await readFile(outputPath, "utf8"));
+      return {
+        parsed: JSON.parse(await readFile(outputPath, "utf8")),
+        evidence: parseCodexJsonl(processResult.stdout),
+      };
     } catch (error) {
+      if (error instanceof BridgeError) {
+        throw error;
+      }
       throw new BridgeError(
         "INVALID_STRUCTURED_OUTPUT",
         "Codex did not produce valid JSON at the expected result path.",
         { cause: error },
       );
     }
+  }
 
-    let result: ResearchResult;
-    try {
-      result = normalizeWorkerResult(
-        bindAuthoritativeMetadata(
-          parsed,
-          options.input,
-          options.metadataTimestamp,
-        ),
-      );
-    } catch (error) {
+  /**
+   * Claude Code has no `--output-schema` or `--output-last-message`, so the
+   * result is recovered from the final assistant message in the stream and
+   * validated afterwards by `normalizeWorkerResult`.
+   */
+  async #runClaudeWorker(options: {
+    taskDirectory: string;
+    isolation: WorkerIsolation;
+    input: ResearchWebInput;
+    prompt: string;
+    signal: AbortSignal | undefined;
+  }): Promise<{ parsed: unknown; evidence: CodexEvidence }> {
+    const claudeArgs = buildClaudeArgs({
+      cwd: options.taskDirectory,
+      maxTurns: options.input.depth === "deep" ? 24 : 12,
+      ...(this.#model === undefined ? {} : { model: this.#model }),
+    });
+    const processResult = await this.#processRunner({
+      command: this.#claudeCommand,
+      args: claudeArgs,
+      label: "Claude Code",
+      cwd: options.taskDirectory,
+      input: options.prompt,
+      timeoutMs: TIMEOUTS[options.input.depth],
+      maxStdoutBytes: 8 * 1_024 * 1_024,
+      maxStderrBytes: 1 * 1_024 * 1_024,
+      env: buildClaudeWorkerEnvironment(this.#environment, options.isolation),
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    });
+
+    const summary = parseClaudeStream(processResult.stdout);
+    if (summary.isError) {
       throw new BridgeError(
-        "INVALID_STRUCTURED_OUTPUT",
-        "Codex produced JSON that does not match the research schema.",
-        { cause: error instanceof ZodError ? error.issues : error },
+        "WORKER_FAILED",
+        "The Claude research worker reported an error result.",
       );
     }
+    if (summary.finalMessage === undefined) {
+      throw new BridgeError(
+        "INVALID_STRUCTURED_OUTPUT",
+        "The Claude research worker returned no final message.",
+      );
+    }
+
     return {
-      result,
-      evidence: parseCodexJsonl(processResult.stdout),
+      parsed: extractJsonObject(summary.finalMessage),
+      evidence: summary.evidence,
     };
   }
 }

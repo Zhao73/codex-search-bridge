@@ -73,5 +73,8 @@ MCP protocol frames are the only stdout output. Operational messages use stderr.
 - URL observation or a successful restricted fetch proves page access and provenance, not that every statement on that page is accurate.
 - Nested Codex work consumes user quota and adds latency.
 - Provider protocol support and model behavior are separate: compatibility mode can avoid unsupported MCP `namespace` tools, but cannot force an outer model to invoke ordinary command tools.
+- The Claude search provider runs with the user's real `HOME` because Claude Code cannot authenticate without it. It is confined by `--strict-mcp-config`, `--setting-sources ""`, a two-tool allowlist, and a throwaway working directory, so it cannot run shell commands or edit files — but it is not process-isolated to the same degree as the Codex worker, and it can read files the user's account can read if a future tool allowlist change ever permits it.
+- The Tavily search provider sends the research question to a third party. Results are filtered through the same scheme, credential, and port policy as the restricted fetcher, and literal private or loopback IP hosts are dropped before any fetch, but the question itself leaves the machine.
+- The `search_api` evidence tier proves that URLs were returned and opened. It does not prove any model read them, so it can never report `verified`.
 
 Report vulnerabilities through the private process in [../SECURITY.md](../SECURITY.md).

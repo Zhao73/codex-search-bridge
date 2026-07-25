@@ -1,0 +1,20 @@
+{
+  "name": "codex-search-bridge",
+  "version": "0.2.0",
+  "description": "Verified Codex live-web research for tool-capable external models.",
+  "author": {
+    "name": "Zhao73",
+    "url": "https://github.com/Zhao73"
+  },
+  "homepage": "https://github.com/Zhao73/codex-search-bridge#readme",
+  "repository": "https://github.com/Zhao73/codex-search-bridge",
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "mcp",
+    "web-search",
+    "local-llm",
+    "research"
+  ],
+  "skills": "./skills/"
+}

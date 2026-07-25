@@ -15,7 +15,10 @@
       "status": "confirmed",
       "confidence": "high",
       "event_date": "2026-07-24",
-      "source_ids": ["S1", "S2"],
+      "source_ids": [
+        "S1",
+        "S2"
+      ],
       "note": "The fresher release listing places 0.146.0-alpha.8 ahead of 0.146.0-alpha.7, correcting the draft."
     },
     {
@@ -24,7 +27,10 @@
       "status": "confirmed",
       "confidence": "high",
       "event_date": "2026-07-24",
-      "source_ids": ["S1", "S2"],
+      "source_ids": [
+        "S1",
+        "S2"
+      ],
       "note": "The displayed year is inferable from the page context, but the fetched content does not state a timezone or seconds. Consequently, an exact ISO publication timestamp is unsupported and published_at is null."
     },
     {
@@ -32,7 +38,10 @@
       "claim": "The software release event date for 0.146.0-alpha.8 was 2026-07-24.",
       "status": "unconfirmed",
       "confidence": "low",
-      "source_ids": ["S1", "S2"],
+      "source_ids": [
+        "S1",
+        "S2"
+      ],
       "note": "The official pages provide a GitHub release-publication display but do not state a distinct software release event date."
     },
     {
@@ -41,7 +50,9 @@
       "status": "confirmed",
       "confidence": "high",
       "event_date": "2026-07-21",
-      "source_ids": ["S3"],
+      "source_ids": [
+        "S3"
+      ],
       "note": "This is GitHub’s designated Latest release, while newer prereleases exist. The fetched content does not state the displayed time’s timezone or seconds."
     },
     {
@@ -49,7 +60,9 @@
       "claim": "The repository CHANGELOG.md delegates the changelog to the GitHub Releases page rather than maintaining version entries in the file.",
       "status": "confirmed",
       "confidence": "high",
-      "source_ids": ["S4"],
+      "source_ids": [
+        "S4"
+      ],
       "note": "The file contains one line directing readers to the releases page."
     }
   ],
@@ -93,6 +106,8 @@
   ],
   "verification": {
     "status": "verified",
+    "provider": "codex",
+    "evidence_tier": "native_audited",
     "web_search_events": 3,
     "opened_page_events": 6,
     "codex_open_page_events": 0,

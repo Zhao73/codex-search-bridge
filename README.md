@@ -6,13 +6,15 @@
 
 ![Codex Search Bridge connects tool-capable models to verified live-web research](assets/hero.svg)
 
-Bring verified live-web research to **tool-capable** models in Codex.
+Bring verified live-web research to **tool-capable** models in Codex and Claude Code.
 
 [简体中文](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Security](docs/security.md)
 
-> **Unofficial community project.** This repository is not affiliated with or endorsed by OpenAI. It uses the Codex installation, Codex authentication, web-search permission, and quota already available to the user.
+> **Unofficial community project.** This repository is not affiliated with or endorsed by OpenAI or Anthropic. It uses the Codex installation, Codex authentication, web-search permission, and quota already available to the user.
 
-Codex Search Bridge is a local Codex plugin with one deliberately simple research tool. An external or open-source model running inside Codex Desktop or Codex CLI calls `research_web`; the Bridge starts an isolated Codex worker with native live search, validates cited URLs, and returns dated evidence to the same conversation. If the installed Codex version does not expose a URL-bearing native page-open event, the Bridge opens cited pages through its own restricted HTTP(S) verifier. It never substitutes another search engine.
+Codex Search Bridge is a local plugin with one deliberately simple research tool. An external or open-source model running inside Codex Desktop, Codex CLI, or Claude Code calls `research_web`; the Bridge starts an isolated Codex worker with native live search, validates cited URLs, and returns dated evidence to the same conversation. If the installed Codex version does not expose a URL-bearing native page-open event, the Bridge opens cited pages through its own restricted HTTP(S) verifier. It never substitutes another search engine.
+
+> **The host is not the search backend.** The host decides which model *calls* the tool; a **provider** decides what actually runs the search. Codex is the default, Claude Code is an equal-strength alternative, and a keyed search API covers users with neither subscription — see [Search providers](#search-providers).
 
 It does **not** make a model without MCP/function calling magically tool-capable.
 
@@ -54,8 +56,52 @@ The child worker runs with fresh `HOME`, `USERPROFILE`, `CODEX_HOME`, and temp r
 - A valid Codex authentication session or OpenAI API configuration with available quota.
 - Live Web Search allowed by the account and workspace policy.
 - An external model that can reliably call either MCP tools or Codex's standard command tools.
+- A host that speaks MCP: Codex CLI, the Codex app, or Claude Code.
+- At least one working [search provider](#search-providers).
+
+## Search providers
+
+The host you install into and the backend that performs the search are separate choices. The Bridge picks the strongest available backend automatically.
+
+| Provider | Needs | Max evidence tier | Runs |
+| --- | --- | --- | --- |
+| `codex` (default) | Codex CLI + Codex login + quota | `native_audited` | Isolated `codex --search` worker, fresh HOME/CODEX_HOME, read-only sandbox |
+| `claude` | Claude Code CLI 2.1.220+ · Claude login | `native_audited` | Isolated `claude --print` worker with `WebSearch`/`WebFetch` only |
+| `tavily` | `TAVILY_API_KEY` (free tier, no card) | `search_api` | Tavily query, then the Bridge's own restricted page verifier |
+
+Auto-selection order is `codex` → `claude` → `tavily`: whichever is present first wins. Pin one explicitly with `CODEX_SEARCH_BRIDGE_PROVIDER`:
+
+```bash
+CODEX_SEARCH_BRIDGE_PROVIDER=claude   # force the Claude worker
+CODEX_SEARCH_BRIDGE_PROVIDER=tavily   # force the keyed search API
+CODEX_SEARCH_BRIDGE_PROVIDER=auto     # default
+```
+
+Every result reports which backend ran it:
+
+```json
+"verification": { "provider": "claude", "evidence_tier": "native_audited", "status": "verified" }
+```
+
+### What each tier actually proves
+
+- **`native_audited`** — the provider's own live search ran, pages were opened, and a second isolated worker reconciled directly fetched page text against the answer. This is the only tier that can reach `"status": "verified"`.
+- **`native`** — live search and page opens happened, but no content-audit pass ran.
+- **`search_api`** — a third-party index supplied the URLs and only the Bridge's restricted HTTP(S) verifier opened them. **No model read the pages**, so claims are not attributed and dates are not reconciled. This tier is capped at `"status": "partial"` and returns a single `unconfirmed` claim no matter how clean the URL provenance looks. Treat it as a lead, not as confirmed research.
+
+### Provider caveats
+
+**Claude worker isolation is weaker than the Codex worker's.** Claude Code resolves its login from the user's config directory and the macOS Keychain; both a fresh `HOME` and an isolated `CLAUDE_CONFIG_DIR` make it report "Not logged in". The worker therefore keeps the real `HOME` and is confined on the command line instead: no MCP servers (`--strict-mcp-config`), no settings or hooks (`--setting-sources ""`), an allowlist limited to `WebSearch` and `WebFetch`, and a throwaway working directory. It cannot run shell commands or edit files, but it is not sandboxed to the same degree as the Codex worker.
+
+**The Claude worker needs a recent CLI.** Isolation depends on `--setting-sources`, verified against Claude Code 2.1.220. An older CLI that does not recognise the flag makes the worker exit before searching; pin another provider with `CODEX_SEARCH_BRIDGE_PROVIDER` or upgrade Claude Code.
+
+**A gateway-pointed environment is bypassed on purpose.** If `ANTHROPIC_BASE_URL` is set, the Claude worker drops it along with the gateway credentials and talks to the real Anthropic endpoint. An open-weight model behind a gateway has no server-side `WebSearch` tool, so inheriting the redirect would guarantee failure.
 
 ## Install
+
+Pick the host you drive the model from. All three install paths share the same server, Skill, and evidence pipeline.
+
+### Codex CLI and Codex app
 
 The commands are identical in macOS Terminal and Windows PowerShell:
 
@@ -65,6 +111,44 @@ codex plugin add codex-search-bridge@codex-search-bridge
 ```
 
 Start a new Codex task after installation so the model receives the new Skill and MCP tool.
+
+### Claude Code
+
+Run these as slash commands inside Claude Code:
+
+```text
+/plugin marketplace add Zhao73/codex-search-bridge
+/plugin install codex-search-bridge@codex-search-bridge
+/reload-plugins
+```
+
+This registers the `research_web` and `doctor` MCP tools plus the bundled `verified-web-research` Skill. Confirm the server is up with `claude mcp list`; the entry appears as `plugin:codex-search-bridge:codex-search-bridge`.
+
+Use this when Claude Code is pointed at a third-party or open-weight model through a custom `ANTHROPIC_BASE_URL` gateway: Claude Code's built-in web search is a server-side Anthropic tool and is unavailable on those endpoints, while this Bridge is an ordinary local MCP server and keeps working.
+
+### Any other MCP client (npm)
+
+The server is published to npm, so any MCP-capable client can launch it without installing a plugin:
+
+```bash
+claude mcp add codex-search-bridge -- npx -y codex-search-bridge
+```
+
+Or register it by hand in an `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "codex-search-bridge": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "codex-search-bridge"]
+    }
+  }
+}
+```
+
+The npm package ships only the bundled server; the `verified-web-research` Skill is plugin-only, so on this path prompt the model to call `research_web` explicitly.
 
 Ask:
 
@@ -219,9 +303,24 @@ The worker still sends the research request to the user's configured Codex servi
 
 ## Uninstall
 
+Codex CLI and Codex app:
+
 ```bash
 codex plugin remove codex-search-bridge@codex-search-bridge
 codex plugin marketplace remove codex-search-bridge
+```
+
+Claude Code:
+
+```text
+/plugin uninstall codex-search-bridge@codex-search-bridge
+/plugin marketplace remove codex-search-bridge
+```
+
+Installed via npm instead of a plugin:
+
+```bash
+claude mcp remove codex-search-bridge
 ```
 
 ## Develop

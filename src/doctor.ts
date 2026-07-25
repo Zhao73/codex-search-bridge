@@ -2,9 +2,16 @@ import process from "node:process";
 
 import { z } from "zod";
 
+import { ProviderIdSchema } from "./contracts.js";
 import type { ResearchResult } from "./contracts.js";
 import { runCodexProcess } from "./codex-process.js";
 import { BridgeError } from "./errors.js";
+import {
+  detectAvailability,
+  type ProviderAvailability,
+  type ProviderId,
+  selectProvider,
+} from "./providers.js";
 import {
   buildWorkerEnvironment,
   ResearchRunner,
@@ -25,6 +32,14 @@ export const DoctorReportSchema = z
         found: z.boolean(),
         version: z.string().optional(),
         authenticated: z.boolean(),
+      })
+      .strict(),
+    providers: z
+      .object({
+        selected: ProviderIdSchema.optional(),
+        codex: z.boolean(),
+        claude: z.boolean(),
+        tavily: z.boolean(),
       })
       .strict(),
     live_search: z
@@ -53,6 +68,8 @@ export type DoctorDependencies = {
   getCodexVersion?: () => Promise<string>;
   runResearch?: () => Promise<ResearchResult>;
   now?: () => Date;
+  availability?: () => Promise<ProviderAvailability>;
+  requestedProvider?: string;
 };
 
 function nodeMajor(version: string): number | undefined {
@@ -99,6 +116,7 @@ function baseReport(
     checked_at: checkedAt,
     node: { version, supported: nodeSupported },
     codex: { found: false, authenticated: false },
+    providers: { codex: false, claude: false, tavily: false },
     live_search: {
       available: false,
       web_search_events: 0,
@@ -126,32 +144,53 @@ export async function runDoctor(
     return DoctorReportSchema.parse(report);
   }
 
-  const getCodexVersion = dependencies.getCodexVersion ?? defaultCodexVersion;
+  const detect = dependencies.availability ?? (() => detectAvailability());
+  const availability = await detect();
+  report.providers = { ...availability };
+
+  let selected: ProviderId;
   try {
-    const rawVersion = await getCodexVersion();
-    report.codex.found = true;
-    const version = parseCodexVersion(rawVersion);
-    if (version !== undefined) {
-      report.codex.version = version;
-    } else {
-      report.status = "degraded";
-      report.remediations.push(
-        "Update Codex CLI because its version string was not recognized.",
-      );
-    }
-  } catch (error) {
+    selected = selectProvider(availability, dependencies.requestedProvider);
+    report.providers.selected = selected;
+  } catch {
     report.remediations.push(
-      error instanceof BridgeError && error.code === "CODEX_NOT_FOUND"
-        ? "Install Codex CLI or set CODEX_SEARCH_BRIDGE_CODEX_BIN."
-        : "Verify that the Codex CLI can start from this environment.",
+      "No research provider is available. Install Codex CLI or Claude Code and sign in, or set TAVILY_API_KEY.",
     );
     return DoctorReportSchema.parse(report);
+  }
+
+  // The Codex version gate only applies when Codex is the backend that will
+  // actually run the search.
+  if (selected === "codex") {
+    const getCodexVersion = dependencies.getCodexVersion ?? defaultCodexVersion;
+    try {
+      const rawVersion = await getCodexVersion();
+      report.codex.found = true;
+      const version = parseCodexVersion(rawVersion);
+      if (version !== undefined) {
+        report.codex.version = version;
+      } else {
+        report.status = "degraded";
+        report.remediations.push(
+          "Update Codex CLI because its version string was not recognized.",
+        );
+      }
+    } catch (error) {
+      report.remediations.push(
+        error instanceof BridgeError && error.code === "CODEX_NOT_FOUND"
+          ? "Install Codex CLI or set CODEX_SEARCH_BRIDGE_CODEX_BIN."
+          : "Verify that the Codex CLI can start from this environment.",
+      );
+      return DoctorReportSchema.parse(report);
+    }
+  } else {
+    report.codex.found = availability.codex;
   }
 
   const runResearch = dependencies.runResearch ?? defaultResearch;
   try {
     const result = await runResearch();
-    report.codex.authenticated = true;
+    report.codex.authenticated = selected === "codex";
     report.live_search = {
       available:
         result.verification.web_search_events > 0 &&
@@ -166,7 +205,7 @@ export async function runDoctor(
     report.status = report.live_search.available ? report.status === "degraded" ? "degraded" : "healthy" : "failed";
     if (!report.live_search.available) {
       report.remediations.push(
-        "Enable live Web Search and verify that Codex performs an open_page action.",
+        `Enable live web search and verify that the ${selected} provider both searches and opens a page.`,
       );
     }
   } catch (error) {
@@ -174,12 +213,12 @@ export async function runDoctor(
       if (error.code === "CODEX_AUTH_REQUIRED") {
         report.remediations.push("Sign in to Codex, then run doctor again.");
       } else if (error.code === "WEB_SEARCH_UNAVAILABLE") {
-        report.codex.authenticated = true;
+        report.codex.authenticated = selected === "codex";
         report.remediations.push(
           "Enable live Web Search in the Codex account or workspace policy.",
         );
       } else if (error.code === "EVIDENCE_VERIFICATION_FAILED") {
-        report.codex.authenticated = true;
+        report.codex.authenticated = selected === "codex";
         report.remediations.push(
           "Confirm Codex emits both live web_search and open_page evidence.",
         );

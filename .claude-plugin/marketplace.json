@@ -1,0 +1,34 @@
+{
+  "name": "codex-search-bridge",
+  "owner": {
+    "name": "Zhao73",
+    "url": "https://github.com/Zhao73"
+  },
+  "metadata": {
+    "description": "Verified Codex live-web research for tool-capable external models.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "codex-search-bridge",
+      "source": "./plugins/codex-search-bridge",
+      "description": "Verified Codex live-web research for tool-capable external models.",
+      "version": "0.2.0",
+      "author": {
+        "name": "Zhao73",
+        "url": "https://github.com/Zhao73"
+      },
+      "homepage": "https://github.com/Zhao73/codex-search-bridge#readme",
+      "repository": "https://github.com/Zhao73/codex-search-bridge",
+      "license": "Apache-2.0",
+      "category": "productivity",
+      "keywords": [
+        "codex",
+        "mcp",
+        "web-search",
+        "local-llm",
+        "research"
+      ]
+    }
+  ]
+}

@@ -116,6 +116,8 @@ describe("ResearchResultSchema", () => {
       ],
       verification: {
         status: "partial",
+        provider: "codex",
+        evidence_tier: "native_audited",
         web_search_events: 1,
         opened_page_events: 2,
         codex_open_page_events: 2,
@@ -162,6 +164,8 @@ describe("ResearchResultSchema", () => {
       sources: [],
       verification: {
         status: "failed",
+        provider: "tavily",
+        evidence_tier: "search_api",
         web_search_events: 0,
         opened_page_events: 0,
         codex_open_page_events: 0,

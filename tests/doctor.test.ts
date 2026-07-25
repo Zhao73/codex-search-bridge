@@ -33,6 +33,8 @@ const verifiedResult: ResearchResult = {
   ],
   verification: {
     status: "verified",
+    provider: "codex",
+    evidence_tier: "native",
     web_search_events: 1,
     opened_page_events: 1,
     codex_open_page_events: 1,
@@ -47,6 +49,11 @@ const verifiedResult: ResearchResult = {
 describe("runDoctor", () => {
   it("reports a healthy verified installation", async () => {
     const report = await runDoctor({
+      availability: async () => ({
+        codex: true,
+        claude: false,
+        tavily: false,
+      }),
       nodeVersion: "v20.19.0",
       getCodexVersion: async () => "codex-cli 0.145.0",
       runResearch: async () => verifiedResult,
@@ -73,6 +80,11 @@ describe("runDoctor", () => {
 
   it("reports a missing Codex executable without secrets", async () => {
     const report = await runDoctor({
+      availability: async () => ({
+        codex: true,
+        claude: false,
+        tavily: false,
+      }),
       nodeVersion: "v20.19.0",
       getCodexVersion: async () => {
         throw new BridgeError("CODEX_NOT_FOUND", "missing sk-secret123");
@@ -88,6 +100,11 @@ describe("runDoctor", () => {
 
   it("classifies authentication and web-search failures", async () => {
     const report = await runDoctor({
+      availability: async () => ({
+        codex: true,
+        claude: false,
+        tavily: false,
+      }),
       nodeVersion: "v20.19.0",
       getCodexVersion: async () => "codex-cli 0.145.0",
       runResearch: async () => {
@@ -108,6 +125,11 @@ describe("runDoctor", () => {
   it("rejects unsupported Node versions before running live research", async () => {
     let researchCalls = 0;
     const report = await runDoctor({
+      availability: async () => ({
+        codex: true,
+        claude: false,
+        tavily: false,
+      }),
       nodeVersion: "v18.20.0",
       getCodexVersion: async () => "codex-cli 0.145.0",
       runResearch: async () => {

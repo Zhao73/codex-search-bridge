@@ -6,7 +6,7 @@ brand
 
 ## Users
 
-Developers, local-model experimenters, and AI-tool builders who run external or open models inside Codex Desktop or Codex CLI. They want current web information without replacing their chosen conversational model, and they need visible proof that search and source opening actually occurred.
+Developers, local-model experimenters, and AI-tool builders who run external or open models inside Codex Desktop, Codex CLI, or Claude Code. They want current web information without replacing their chosen conversational model, and they need visible proof that search and source opening actually occurred. Users with no Codex or Claude subscription reach the same tool through a keyed search backend, at a lower and explicitly labelled evidence tier.
 
 ## Product Purpose
 

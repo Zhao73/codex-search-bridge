@@ -49,7 +49,29 @@ URL provenance uses exact normalized HTTP(S) URLs. It may remove fragments and k
 
 Every source gets `provenance_verified`. Claims marked confirmed without a verified cited source are downgraded to unconfirmed. Conflicts are preserved. The Bridge never upgrades worker confidence.
 
+## Search providers
+
+The host that calls the tool and the backend that performs the search are independent. `selectProvider` resolves `codex` → `claude` → `tavily`, taking the first that is available, and `CODEX_SEARCH_BRIDGE_PROVIDER` pins one explicitly. Every result carries `verification.provider` and `verification.evidence_tier`.
+
+`codex` and `claude` are both agent workers and share the whole pipeline: prompt, structured result, page fetcher, content audit, and verifier. They differ only in how the worker is spawned and how its evidence is read.
+
+- **codex** — `codex --search ... --json` with `--output-schema`; evidence is parsed from JSONL `web_search` actions.
+- **claude** — `claude --print --output-format stream-json`; a `tool_use` block named `WebSearch` is a search event, a `WebFetch` block is a native page open, and cited URLs are recovered from the `Links: [...]` array Claude embeds in the search `tool_result` text. Claude Code has no `--output-schema`, so the result shape is stated in the prompt and validated afterwards by `normalizeWorkerResult`.
+- **tavily** — not an agent. The Bridge queries the search API, opens every returned URL through its own restricted fetcher, and emits a single `unconfirmed` claim. No model reads the pages.
+
+### Evidence tiers
+
+| Tier | Reached when | Ceiling |
+| --- | --- | --- |
+| `native_audited` | agent worker searched, opened pages, and a second isolated worker reconciled fetched text | `verified` |
+| `native` | agent worker searched and opened pages, no audit pass | `partial` |
+| `search_api` | search API supplied URLs, only the Bridge opened them | `partial`, hard-capped |
+
+The `search_api` cap is enforced in the verifier rather than left to the caller: complete URL provenance is not the same as a model having read the page, and only the audited tier may report `verified`.
+
 ## Isolation and recursion prevention
+
+The Codex worker gets full process isolation:
 
 - `features.plugins=false` prevents the child from loading this plugin again.
 - Fresh `HOME`, `USERPROFILE`, and `CODEX_HOME` roots prevent discovery of user Skills, plugins, MCP servers, and configuration. Only `auth.json` is copied when needed.
@@ -60,6 +82,18 @@ Every source gets `provenance_verified`. Claims marked confirmed without a verif
 - The public tool cannot supply a command, model, path, system prompt, or environment variable.
 
 The worker still uses the user's Codex authentication and quota. Organization requirements remain authoritative and can disable live search.
+
+The Claude worker cannot use the same approach. Claude Code resolves its login from the user's config directory and, on macOS, the Keychain; a fresh `HOME` and an isolated `CLAUDE_CONFIG_DIR` both make it report "Not logged in". It therefore keeps the real `HOME` and is confined on the command line instead:
+
+- `--strict-mcp-config` with no `--mcp-config` loads zero MCP servers, which is what prevents recursion into this Bridge.
+- `--setting-sources ""` loads no user, project, or local settings, so no hooks, permission allowlists, or `CLAUDE.md` apply.
+- `--allowedTools WebSearch WebFetch` plus an explicit deny list keeps the worker away from shell and file tools.
+- `--permission-mode dontAsk` and a throwaway working directory keep the run non-interactive and out of the user's project.
+- `--bare` is deliberately **not** used: it would also disable MCP and settings, but it restricts auth to `ANTHROPIC_API_KEY`, breaking every OAuth subscription user.
+
+Only `PATH`, `HOME`, `USER`, `LOGNAME`, locale, temp roots, and platform variables reach the Claude worker. `USER` is load-bearing on macOS — without it the Keychain lookup fails and the worker reports "Not logged in" despite a valid session. `ANTHROPIC_BASE_URL` and gateway credentials are stripped, because an open-weight model behind a gateway has no server-side `WebSearch` tool.
+
+This is weaker than the Codex worker's isolation and is documented as such rather than described as equivalent.
 
 ## Compatibility strategy
 

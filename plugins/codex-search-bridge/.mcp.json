@@ -1,20 +1,10 @@
 {
   "mcpServers": {
     "codex-search-bridge": {
+      "type": "stdio",
       "command": "node",
       "args": [
-        "./dist/server.mjs"
-      ],
-      "cwd": ".",
-      "env_vars": [
-        "CODEX_HOME",
-        "OPENAI_API_KEY",
-        "OPENAI_ORG_ID",
-        "OPENAI_PROJECT_ID",
-        "OPENAI_BASE_URL",
-        "CODEX_SEARCH_BRIDGE_CODEX_BIN",
-        "CODEX_SEARCH_BRIDGE_MODEL",
-        "CODEX_SEARCH_BRIDGE_CLI_ONLY"
+        "${CLAUDE_PLUGIN_ROOT}/dist/server.mjs"
       ]
     }
   }

@@ -16,7 +16,15 @@ Use `research_web` whenever the answer depends on current or externally referenc
 5. Add `recency_hours`, `date_from`, or `date_to` only when the request supplies or clearly implies that boundary.
 6. Keep `max_sources` between 3 and 12. Prefer 6 unless the task needs broader coverage.
 
-Do not claim to have searched unless the tool succeeds and returns a nonzero `web_search_events` count. For standard or deep work, require a nonzero `opened_page_events` count. When describing provenance, distinguish native `codex_open_page_events` from restricted `bridge_fetch_events`; never describe a Bridge fetch as a Codex-native open action. If `bridge_fetch_events` is nonzero, require `content_audit_passes` to be nonzero.
+Do not claim to have searched unless the tool succeeds and returns a nonzero `web_search_events` count. For standard or deep work, require a nonzero `opened_page_events` count. When describing provenance, distinguish native `codex_open_page_events` from restricted `bridge_fetch_events`; never describe a Bridge fetch as a provider-native open action.
+
+Read `verification.provider` and `verification.evidence_tier` before you characterise the result:
+
+- `native_audited` — a search agent opened pages and a second isolated worker reconciled the fetched text. This is the only tier that may be presented as verified research.
+- `native` — searched and opened pages, but nothing reconciled the page text. Report claims as supported by sources, not as audited.
+- `search_api` — a third-party search index supplied the URLs and only the Bridge opened them. **No model read the pages.** Present this as a set of leads with sources, never as verified research, and say so explicitly in your answer. Do not require `content_audit_passes` here; this tier has none by design and its `status` is capped at `partial`.
+
+Outside the `search_api` tier, a nonzero `bridge_fetch_events` still requires a nonzero `content_audit_passes`.
 
 ## Standard-function fallback for local providers
 
@@ -47,8 +55,10 @@ Add a short **Unconfirmed or conflicting / 未确认或冲突** section whenever
 
 ## Handle failure honestly
 
-- If the error is `CODEX_NOT_FOUND`, ask the user to install Codex CLI or configure `CODEX_SEARCH_BRIDGE_CODEX_BIN`.
-- If the error is `CODEX_AUTH_REQUIRED`, ask the user to sign in to Codex.
+- If the error is `CODEX_NOT_FOUND`, the named executable is missing; ask the user to install it or configure `CODEX_SEARCH_BRIDGE_CODEX_BIN` / `CODEX_SEARCH_BRIDGE_CLAUDE_BIN`.
+- If the error is `CODEX_AUTH_REQUIRED`, ask the user to sign in to the provider named in the message.
+- If the error is `PROVIDER_UNAVAILABLE`, no search backend is installed; ask the user to install Codex CLI or Claude Code and sign in, or to set `TAVILY_API_KEY`.
+- If the error is `SEARCH_API_FAILED`, the keyed search backend rejected the request; report the message and suggest checking `TAVILY_API_KEY` and its remaining credits.
 - If the error is `WEB_SEARCH_UNAVAILABLE`, state that account or workspace policy blocked live search.
 - If the error is `EVIDENCE_VERIFICATION_FAILED`, state that search/open-page proof was missing; do not answer from memory as if it were current.
 - For setup problems, call `doctor` and report its exact safe remediation list.

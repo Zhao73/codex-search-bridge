@@ -6,13 +6,15 @@
 
 ![Codex Search Bridge 让可调用工具的模型获得可验证实时网页研究](assets/hero.svg)
 
-为 Codex 中**能够调用工具**的外部／开源模型提供可验证的实时网页研究通道。
+为 Codex 和 Claude Code 中**能够调用工具**的外部／开源模型提供可验证的实时网页研究通道。
 
 [English](README.md) · [架构](docs/architecture.md) · [安全](docs/security.md)
 
-> **非官方 community 社区项目。** 本项目不隶属于 OpenAI，也未获得 OpenAI 官方背书。它使用用户现有的 Codex 安装、Codex authentication、联网权限和 quota 配额。
+> **非官方 community 社区项目。** 本项目不隶属于 OpenAI 或 Anthropic，也未获得官方背书。它使用用户现有的 Codex 安装、Codex authentication、联网权限和 quota 配额。
 
-外部模型运行在 Codex Desktop 或 Codex CLI 里，只需调用一个 `research_web` MCP 工具。Bridge 会启动隔离的 Codex 原生实时搜索任务，核验真实搜索和引用 URL，再把带来源、日期、冲突与未确认标记的结果返回当前对话。如果当前 Codex 版本没有暴露带 URL 的原生网页打开事件，Bridge 会用受限 HTTP(S) 验证器直接打开引用页面，但绝不替换成另一套搜索引擎。
+外部模型运行在 Codex Desktop、Codex CLI 或 Claude Code 里，只需调用一个 `research_web` MCP 工具。Bridge 会启动隔离的 Codex 原生实时搜索任务，核验真实搜索和引用 URL，再把带来源、日期、冲突与未确认标记的结果返回当前对话。如果当前 Codex 版本没有暴露带 URL 的原生网页打开事件，Bridge 会用受限 HTTP(S) 验证器直接打开引用页面，但绝不替换成另一套搜索引擎。
+
+> **宿主不等于搜索后端。** 宿主只决定"由哪个模型*调用*这个工具"，真正执行搜索的是 **provider**。Codex 是默认后端，Claude Code 是同等强度的替代，另有一个带 key 的搜索 API 后端覆盖两种订阅都没有的用户，详见[搜索后端](#搜索后端)。
 
 它不能让完全不支持 MCP／函数调用的模型凭空获得工具能力。
 
@@ -54,8 +56,52 @@ flowchart LR
 - 已完成 Codex authentication，并有可用 quota。
 - 账户和工作区允许实时 Web Search。
 - 当前外部模型能够可靠调用 MCP，或可靠使用 Codex 标准命令工具。
+- 一个支持 MCP 的宿主：Codex CLI、Codex app 或 Claude Code。
+- 至少一个可用的[搜索后端](#搜索后端)。
+
+## 搜索后端
+
+「装在哪个宿主」和「谁来执行搜索」是两个独立的选择。Bridge 会自动挑选当前可用的最强后端。
+
+| 后端 | 前置条件 | 最高证据等级 | 实际执行 |
+| --- | --- | --- | --- |
+| `codex`（默认） | Codex CLI + 登录 + quota | `native_audited` | 隔离的 `codex --search` worker，全新 HOME/CODEX_HOME，只读沙箱 |
+| `claude` | Claude Code CLI 2.1.220+ · 登录 | `native_audited` | 隔离的 `claude --print` worker，只放行 `WebSearch`/`WebFetch` |
+| `tavily` | `TAVILY_API_KEY`（免费额度，不需信用卡） | `search_api` | Tavily 查询 + Bridge 自己的受限网页验证器 |
+
+自动选择顺序是 `codex` → `claude` → `tavily`，谁先具备就用谁。也可以用 `CODEX_SEARCH_BRIDGE_PROVIDER` 强制指定：
+
+```bash
+CODEX_SEARCH_BRIDGE_PROVIDER=claude   # 强制走 Claude worker
+CODEX_SEARCH_BRIDGE_PROVIDER=tavily   # 强制走带 key 的搜索 API
+CODEX_SEARCH_BRIDGE_PROVIDER=auto     # 默认
+```
+
+每次结果都会写明是哪个后端跑的：
+
+```json
+"verification": { "provider": "claude", "evidence_tier": "native_audited", "status": "verified" }
+```
+
+### 每个等级到底证明了什么
+
+- **`native_audited`** —— 后端自己的实时搜索跑了、页面被打开了，并且有第二个隔离 worker 拿直接抓取的正文和答案做过核对。**只有这个等级能达到 `"status": "verified"`。**
+- **`native`** —— 实时搜索和开页都发生了，但没有跑内容审计。
+- **`search_api`** —— URL 来自第三方索引，只有 Bridge 的受限 HTTP(S) 验证器打开过它们。**没有任何模型读过这些页面**，所以既没有claim级归因也没有日期核对。这个等级**上限被锁死在 `"status": "partial"`**，并且只返回一条 `unconfirmed` claim，无论 URL 溯源看起来多干净。它是线索，不是已核实的研究。
+
+### 后端注意事项
+
+**Claude worker 的隔离强度弱于 Codex worker。** Claude Code 从用户配置目录和 macOS Keychain 解析登录态；无论是换 `HOME` 还是隔离 `CLAUDE_CONFIG_DIR`，它都会报 "Not logged in"。因此这个 worker 保留真实 `HOME`，改在命令行层面约束：不加载任何 MCP（`--strict-mcp-config`）、不加载任何设置与 hooks（`--setting-sources ""`）、工具白名单只有 `WebSearch` 和 `WebFetch`、工作目录是临时目录。它无法执行 shell 命令、无法改文件，但沙箱强度确实不及 Codex worker。
+
+**Claude worker 需要较新的 CLI。** 隔离依赖 `--setting-sources`，实测基准是 Claude Code 2.1.220。旧版不认这个参数会导致 worker 在搜索前就退出；这种情况用 `CODEX_SEARCH_BRIDGE_PROVIDER` 指定别的后端，或升级 Claude Code。
+
+**指向网关的环境会被刻意绕开。** 如果检测到 `ANTHROPIC_BASE_URL`，Claude worker 会连同网关凭据一起丢弃，直连真实 Anthropic 端点。因为网关后面的开源模型没有服务端 `WebSearch` 工具，继承这个重定向必定失败。
 
 ## 安装
+
+按你实际驱动模型的宿主选一种。三条路径共用同一个 server、Skill 和证据校验管线。
+
+### Codex CLI 与 Codex app
 
 macOS Terminal 与 Windows PowerShell 使用相同命令：
 
@@ -65,6 +111,44 @@ codex plugin add codex-search-bridge@codex-search-bridge
 ```
 
 安装后新建一个 Codex 任务，让模型加载新的 Skill 和 MCP 工具。
+
+### Claude Code
+
+在 Claude Code 里作为斜杠命令执行：
+
+```text
+/plugin marketplace add Zhao73/codex-search-bridge
+/plugin install codex-search-bridge@codex-search-bridge
+/reload-plugins
+```
+
+这会注册 `research_web`、`doctor` 两个 MCP 工具，以及捆绑的 `verified-web-research` Skill。用 `claude mcp list` 确认，条目显示为 `plugin:codex-search-bridge:codex-search-bridge`。
+
+**典型场景**：当 Claude Code 通过自定义 `ANTHROPIC_BASE_URL` 网关接第三方／开源模型时，Claude Code 自带的联网搜索是 Anthropic 服务端工具，在这类端点上不可用；而本 Bridge 是普通的本地 MCP server，照常工作。
+
+### 其他 MCP 客户端（npm）
+
+server 已发布到 npm，任何支持 MCP 的客户端都能直接拉起，无需安装插件：
+
+```bash
+claude mcp add codex-search-bridge -- npx -y codex-search-bridge
+```
+
+也可以手写进 `.mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "codex-search-bridge": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "codex-search-bridge"]
+    }
+  }
+}
+```
+
+npm 包只包含打包后的 server，`verified-web-research` Skill 仅随插件分发，因此这条路径下需要明确提示模型调用 `research_web`。
 
 示例请求：
 
@@ -203,9 +287,24 @@ Bridge 只向隔离 Worker 传递经过验证的问题、时间范围、语言�
 
 ## 卸载
 
+Codex CLI 与 Codex app：
+
 ```bash
 codex plugin remove codex-search-bridge@codex-search-bridge
 codex plugin marketplace remove codex-search-bridge
+```
+
+Claude Code：
+
+```text
+/plugin uninstall codex-search-bridge@codex-search-bridge
+/plugin marketplace remove codex-search-bridge
+```
+
+如果是走 npm 而非插件安装：
+
+```bash
+claude mcp remove codex-search-bridge
 ```
 
 ## 开发

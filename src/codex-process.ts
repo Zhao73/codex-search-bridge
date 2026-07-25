@@ -15,6 +15,11 @@ export type CodexProcessRequest = {
   maxStderrBytes: number;
   env: NodeJS.ProcessEnv;
   signal?: AbortSignal;
+  /**
+   * Name of the worker being spawned, used only in diagnostics. Defaults to
+   * Codex so existing callers keep their wording.
+   */
+  label?: string;
 };
 
 export type CodexProcessResult = {
@@ -52,18 +57,20 @@ export function sanitizeDiagnostic(
   return sanitized;
 }
 
-function mapNonZeroExit(output: string): BridgeError {
+function mapNonZeroExit(output: string, label = "Codex"): BridgeError {
   if (/invalid_json_schema|response_format.{0,80}schema/is.test(output)) {
     return new BridgeError(
       "INVALID_STRUCTURED_OUTPUT",
-      "Codex rejected the bundled research output schema.",
+      `${label} rejected the bundled research output schema.`,
     );
   }
   if (/\b(?:401|unauthorized|not logged in|authentication required)\b/i.test(output)) {
     return new BridgeError(
       "CODEX_AUTH_REQUIRED",
-      "Codex authentication is required or has expired.",
-      { remediation: "Sign in to Codex, then run the Bridge doctor again." },
+      `${label} authentication is required or has expired.`,
+      {
+        remediation: `Sign in to ${label}, then run the Bridge doctor again.`,
+      },
     );
   }
   if (
@@ -82,7 +89,7 @@ function mapNonZeroExit(output: string): BridgeError {
   }
   return new BridgeError(
     "WORKER_FAILED",
-    "The Codex research worker exited unsuccessfully.",
+    `The ${label} research worker exited unsuccessfully.`,
   );
 }
 
@@ -211,12 +218,19 @@ export function runCodexProcess(
       }
       request.signal?.removeEventListener("abort", onAbort);
       if (error.code === "ENOENT") {
+        const label = request.label ?? "Codex";
         reject(
-          new BridgeError("CODEX_NOT_FOUND", "The Codex executable was not found.", {
-            cause: error,
-            remediation:
-              "Install Codex CLI or set CODEX_SEARCH_BRIDGE_CODEX_BIN.",
-          }),
+          new BridgeError(
+            "CODEX_NOT_FOUND",
+            `The ${label} executable was not found.`,
+            {
+              cause: error,
+              remediation:
+                label === "Codex"
+                  ? "Install Codex CLI or set CODEX_SEARCH_BRIDGE_CODEX_BIN."
+                  : `Install ${label} or set CODEX_SEARCH_BRIDGE_CLAUDE_BIN.`,
+            },
+          ),
         );
         return;
       }
@@ -242,7 +256,7 @@ export function runCodexProcess(
       const stderr = Buffer.concat(stderrChunks).toString("utf8");
       const exitCode = code ?? 1;
       if (exitCode !== 0) {
-        reject(mapNonZeroExit(`${stdout}\n${stderr}`));
+        reject(mapNonZeroExit(`${stdout}\n${stderr}`, request.label ?? "Codex"));
         return;
       }
       resolve({ stdout, stderr, exitCode });

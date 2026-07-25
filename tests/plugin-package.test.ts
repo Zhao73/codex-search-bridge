@@ -25,7 +25,7 @@ describe("Codex plugin package", () => {
 
     expect(manifest).toMatchObject({
       name: "codex-search-bridge",
-      version: "0.1.0",
+      version: "0.2.0",
       description:
         "Verified Codex live-web research for tool-capable external models.",
       author: { name: "Zhao73", url: "https://github.com/Zhao73" },
@@ -33,13 +33,13 @@ describe("Codex plugin package", () => {
       homepage: "https://github.com/Zhao73/codex-search-bridge#readme",
       license: "Apache-2.0",
       skills: "./skills/",
-      mcpServers: "./.mcp.json",
+      mcpServers: "./codex.mcp.json",
     });
     expect(JSON.stringify(manifest)).not.toContain("TODO");
   });
 
   it("declares a local stdio MCP server with safe relative paths", async () => {
-    const config = await json(resolve(pluginRoot, ".mcp.json"));
+    const config = await json(resolve(pluginRoot, "codex.mcp.json"));
     const servers = config.mcpServers as Record<
       string,
       { command: string; args: string[]; cwd: string }
@@ -96,5 +96,86 @@ describe("Codex plugin package", () => {
         },
       ],
     });
+  });
+});
+
+describe("Claude Code plugin package", () => {
+  it("declares complete public plugin metadata", async () => {
+    const manifest = await json(
+      resolve(pluginRoot, ".claude-plugin/plugin.json"),
+    );
+
+    expect(manifest).toMatchObject({
+      name: "codex-search-bridge",
+      version: "0.2.0",
+      description:
+        "Verified Codex live-web research for tool-capable external models.",
+      author: { name: "Zhao73", url: "https://github.com/Zhao73" },
+      repository: "https://github.com/Zhao73/codex-search-bridge",
+      homepage: "https://github.com/Zhao73/codex-search-bridge#readme",
+      license: "Apache-2.0",
+      skills: "./skills/",
+    });
+    expect(JSON.stringify(manifest)).not.toContain("TODO");
+  });
+
+  it("resolves its stdio server through ${CLAUDE_PLUGIN_ROOT}", async () => {
+    const config = await json(resolve(pluginRoot, ".mcp.json"));
+    const servers = config.mcpServers as Record<
+      string,
+      { type: string; command: string; args: string[] }
+    >;
+    const bridge = servers["codex-search-bridge"];
+
+    expect(bridge).toMatchObject({
+      type: "stdio",
+      command: "node",
+      args: ["${CLAUDE_PLUGIN_ROOT}/dist/server.mjs"],
+    });
+
+    // Claude Code has no `cwd` setting, so a bare relative path would resolve
+    // against the user's project directory instead of the plugin.
+    await access(
+      bridge!.args[0]!.replace("${CLAUDE_PLUGIN_ROOT}", pluginRoot),
+    );
+  });
+
+  it("publishes one installable marketplace entry", async () => {
+    const marketplace = await json(
+      resolve(root, ".claude-plugin/marketplace.json"),
+    );
+    expect(marketplace).toMatchObject({
+      name: "codex-search-bridge",
+      owner: { name: "Zhao73" },
+      plugins: [
+        {
+          name: "codex-search-bridge",
+          source: "./plugins/codex-search-bridge",
+        },
+      ],
+    });
+  });
+
+  it("keeps the two host MCP manifests from colliding", async () => {
+    // Claude Code auto-discovers `.mcp.json` at the plugin root, so the Codex
+    // manifest must live under a different name and be referenced explicitly.
+    const codexManifest = await json(
+      resolve(pluginRoot, ".codex-plugin/plugin.json"),
+    );
+    expect(codexManifest.mcpServers).toBe("./codex.mcp.json");
+
+    const claudeConfig = await json(resolve(pluginRoot, ".mcp.json"));
+    const codexConfig = await json(resolve(pluginRoot, "codex.mcp.json"));
+    expect(claudeConfig).not.toEqual(codexConfig);
+
+    // Neither host may see the other's path style.
+    expect(JSON.stringify(claudeConfig)).not.toContain('"cwd"');
+    expect(JSON.stringify(codexConfig)).not.toContain("CLAUDE_PLUGIN_ROOT");
+
+    // Both hosts must still expose the server under the same tool namespace.
+    const names = (config: Record<string, unknown>): string[] =>
+      Object.keys(config.mcpServers as Record<string, unknown>).sort();
+    expect(names(claudeConfig)).toEqual(["codex-search-bridge"]);
+    expect(names(codexConfig)).toEqual(["codex-search-bridge"]);
   });
 });

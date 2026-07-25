@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+import { EVIDENCE_TIERS, PROVIDER_IDS } from "./providers.js";
+
 export const PROJECT_NAME = "Codex Search Bridge" as const;
-export const PROJECT_VERSION = "0.1.0" as const;
+export const PROJECT_VERSION = "0.2.0" as const;
 
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const RFC3339_PATTERN =
@@ -117,9 +119,16 @@ export const SourceSchema = z
   })
   .strict();
 
+export const ProviderIdSchema = z.enum(PROVIDER_IDS);
+export const EvidenceTierSchema = z.enum(EVIDENCE_TIERS);
+
 export const EvidenceSummarySchema = z
   .object({
     status: OverallVerificationStatusSchema,
+    /** Which search stack actually ran the query. */
+    provider: ProviderIdSchema,
+    /** How much of the evidence pipeline ran. See EVIDENCE_TIERS. */
+    evidence_tier: EvidenceTierSchema,
     web_search_events: z.number().int().nonnegative(),
     opened_page_events: z.number().int().nonnegative(),
     codex_open_page_events: z.number().int().nonnegative(),
@@ -166,6 +175,7 @@ export type ResearchQuery = z.infer<typeof ResearchQuerySchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type Source = z.infer<typeof SourceSchema>;
 export type ResearchResult = z.infer<typeof ResearchResultSchema>;
+export type EvidenceSummary = z.infer<typeof EvidenceSummarySchema>;
 export type Depth = z.infer<typeof DepthSchema>;
 export type VerificationStatus = z.infer<typeof VerificationStatusSchema>;
 export type Confidence = z.infer<typeof ConfidenceSchema>;

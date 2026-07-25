@@ -5,11 +5,20 @@ type JsonRecord = Record<string, unknown>;
 export type CodexEvidence = {
   webSearchEvents: number;
   openedPageEvents: number;
+  codexOpenPageEvents: number;
+  bridgeFetchEvents: number;
+  contentAuditPasses: number;
   observedUrls: string[];
+  openedUrls: string[];
   redirects: Map<string, string>;
   queries: string[];
   unknownEventTypes: string[];
   errorMessages: string[];
+  bridgeFetchFailures: Array<{
+    url: string;
+    reason: string;
+    statusCode?: number;
+  }>;
   finalMessage?: string;
 };
 
@@ -54,12 +63,13 @@ function uniquePush(values: string[], value: string | undefined): void {
 export class CodexJsonlAccumulator {
   readonly #seenCalls = new Set<string>();
   readonly #observedUrls: string[] = [];
+  readonly #openedUrls: string[] = [];
   readonly #queries: string[] = [];
   readonly #unknownEventTypes: string[] = [];
   readonly #errorMessages: string[] = [];
   readonly #redirects = new Map<string, string>();
   #webSearchEvents = 0;
-  #openedPageEvents = 0;
+  #codexOpenPageEvents = 0;
   #finalMessage: string | undefined;
 
   pushLine(line: string, lineNumber?: number): void {
@@ -120,12 +130,17 @@ export class CodexJsonlAccumulator {
   snapshot(): CodexEvidence {
     return {
       webSearchEvents: this.#webSearchEvents,
-      openedPageEvents: this.#openedPageEvents,
+      openedPageEvents: this.#codexOpenPageEvents,
+      codexOpenPageEvents: this.#codexOpenPageEvents,
+      bridgeFetchEvents: 0,
+      contentAuditPasses: 0,
       observedUrls: [...this.#observedUrls],
+      openedUrls: [...this.#openedUrls],
       redirects: new Map(this.#redirects),
       queries: [...this.#queries],
       unknownEventTypes: [...this.#unknownEventTypes],
       errorMessages: [...this.#errorMessages],
+      bridgeFetchFailures: [],
       ...(this.#finalMessage === undefined
         ? {}
         : { finalMessage: this.#finalMessage }),
@@ -210,12 +225,14 @@ export class CodexJsonlAccumulator {
       return;
     }
 
-    this.#openedPageEvents += 1;
+    this.#codexOpenPageEvents += 1;
     const url = stringValue(action, "url") ?? stringValue(container, "query");
     const resolvedUrl =
       stringValue(action, "resolved_url") ?? stringValue(action, "redirect_url");
     uniquePush(this.#observedUrls, url);
     uniquePush(this.#observedUrls, resolvedUrl);
+    uniquePush(this.#openedUrls, url);
+    uniquePush(this.#openedUrls, resolvedUrl);
     if (url !== undefined && resolvedUrl !== undefined && url !== resolvedUrl) {
       this.#redirects.set(url, resolvedUrl);
     }
@@ -229,4 +246,63 @@ export function parseCodexJsonl(input: string): CodexEvidence {
     accumulator.pushLine(line, index + 1);
   }
   return accumulator.snapshot();
+}
+
+function uniqueValues(groups: readonly string[][]): string[] {
+  return [...new Set(groups.flat())];
+}
+
+export function combineCodexEvidence(
+  ...evidenceSets: readonly CodexEvidence[]
+): CodexEvidence {
+  const redirects = new Map<string, string>();
+  for (const evidence of evidenceSets) {
+    for (const [from, to] of evidence.redirects) {
+      redirects.set(from, to);
+    }
+  }
+  const codexOpenPageEvents = evidenceSets.reduce(
+    (total, evidence) => total + evidence.codexOpenPageEvents,
+    0,
+  );
+  const bridgeFetchEvents = evidenceSets.reduce(
+    (total, evidence) => total + evidence.bridgeFetchEvents,
+    0,
+  );
+  const contentAuditPasses = evidenceSets.reduce(
+    (total, evidence) => total + evidence.contentAuditPasses,
+    0,
+  );
+  const finalMessage = [...evidenceSets]
+    .reverse()
+    .find((evidence) => evidence.finalMessage !== undefined)?.finalMessage;
+
+  return {
+    webSearchEvents: evidenceSets.reduce(
+      (total, evidence) => total + evidence.webSearchEvents,
+      0,
+    ),
+    openedPageEvents: codexOpenPageEvents + bridgeFetchEvents,
+    codexOpenPageEvents,
+    bridgeFetchEvents,
+    contentAuditPasses,
+    observedUrls: uniqueValues(
+      evidenceSets.map((evidence) => evidence.observedUrls),
+    ),
+    openedUrls: uniqueValues(
+      evidenceSets.map((evidence) => evidence.openedUrls),
+    ),
+    redirects,
+    queries: uniqueValues(evidenceSets.map((evidence) => evidence.queries)),
+    unknownEventTypes: uniqueValues(
+      evidenceSets.map((evidence) => evidence.unknownEventTypes),
+    ),
+    errorMessages: uniqueValues(
+      evidenceSets.map((evidence) => evidence.errorMessages),
+    ),
+    bridgeFetchFailures: evidenceSets.flatMap(
+      (evidence) => evidence.bridgeFetchFailures,
+    ),
+    ...(finalMessage === undefined ? {} : { finalMessage }),
+  };
 }

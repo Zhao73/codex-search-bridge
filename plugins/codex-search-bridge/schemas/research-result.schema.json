@@ -15,19 +15,30 @@
   ],
   "properties": {
     "answer": { "type": "string", "minLength": 1 },
-    "as_of": { "type": "string", "format": "date-time" },
+    "as_of": { "type": "string" },
     "query": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["question", "depth", "max_sources"],
+      "required": [
+        "question",
+        "depth",
+        "max_sources",
+        "recency_hours",
+        "date_from",
+        "date_to",
+        "language"
+      ],
       "properties": {
         "question": { "type": "string", "minLength": 1, "maxLength": 8000 },
         "depth": { "enum": ["quick", "standard", "deep"] },
         "max_sources": { "type": "integer", "minimum": 3, "maximum": 12 },
-        "recency_hours": { "type": "integer", "minimum": 1, "maximum": 8760 },
-        "date_from": { "type": "string", "format": "date" },
-        "date_to": { "type": "string", "format": "date" },
-        "language": { "type": "string", "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$" }
+        "recency_hours": { "type": ["integer", "null"], "minimum": 1, "maximum": 8760 },
+        "date_from": { "type": ["string", "null"] },
+        "date_to": { "type": ["string", "null"] },
+        "language": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
+        }
       }
     },
     "claims": {
@@ -35,7 +46,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "claim", "status", "confidence", "source_ids"],
+        "required": ["id", "claim", "status", "confidence", "event_date", "source_ids", "note"],
         "properties": {
           "id": { "type": "string", "minLength": 1 },
           "claim": { "type": "string", "minLength": 1 },
@@ -43,12 +54,9 @@
             "enum": ["confirmed", "partially_confirmed", "unconfirmed", "conflicting"]
           },
           "confidence": { "enum": ["high", "moderate", "low", "unknown"] },
-          "event_date": {
-            "type": "string",
-            "anyOf": [{ "format": "date" }, { "format": "date-time" }]
-          },
+          "event_date": { "type": ["string", "null"] },
           "source_ids": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-          "note": { "type": "string", "minLength": 1 }
+          "note": { "type": ["string", "null"], "minLength": 1 }
         }
       }
     },
@@ -63,22 +71,19 @@
           "title",
           "retrieved_at",
           "source_type",
-          "provenance_verified"
+          "provenance_verified",
+          "publisher",
+          "published_at",
+          "updated_at"
         ],
         "properties": {
           "id": { "type": "string", "minLength": 1 },
-          "url": { "type": "string", "format": "uri" },
+          "url": { "type": "string" },
           "title": { "type": "string", "minLength": 1 },
-          "publisher": { "type": "string", "minLength": 1 },
-          "published_at": {
-            "type": "string",
-            "anyOf": [{ "format": "date" }, { "format": "date-time" }]
-          },
-          "updated_at": {
-            "type": "string",
-            "anyOf": [{ "format": "date" }, { "format": "date-time" }]
-          },
-          "retrieved_at": { "type": "string", "format": "date-time" },
+          "publisher": { "type": ["string", "null"], "minLength": 1 },
+          "published_at": { "type": ["string", "null"] },
+          "updated_at": { "type": ["string", "null"] },
+          "retrieved_at": { "type": "string" },
           "source_type": { "enum": ["primary", "secondary", "social", "unknown"] },
           "provenance_verified": { "type": "boolean" }
         }
@@ -91,14 +96,20 @@
         "status",
         "web_search_events",
         "opened_page_events",
-        "cited_sources_seen_in_events",
+        "codex_open_page_events",
+        "bridge_fetch_events",
+        "content_audit_passes",
+        "cited_sources_verified",
         "total_cited_sources"
       ],
       "properties": {
         "status": { "enum": ["verified", "partial", "failed"] },
         "web_search_events": { "type": "integer", "minimum": 0 },
         "opened_page_events": { "type": "integer", "minimum": 0 },
-        "cited_sources_seen_in_events": { "type": "integer", "minimum": 0 },
+        "codex_open_page_events": { "type": "integer", "minimum": 0 },
+        "bridge_fetch_events": { "type": "integer", "minimum": 0 },
+        "content_audit_passes": { "type": "integer", "minimum": 0 },
+        "cited_sources_verified": { "type": "integer", "minimum": 0 },
         "total_cited_sources": { "type": "integer", "minimum": 0 }
       }
     },

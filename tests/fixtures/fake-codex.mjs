@@ -16,6 +16,7 @@ if (outputPath === undefined) {
 
 const questionMatch = /"question":\s*"([^"]+)"/.exec(prompt);
 const question = questionMatch?.[1] ?? "When did it launch?";
+const omitNativeOpen = question.includes("Bridge fallback");
 const result = {
   answer: "The launch occurred on July 24.",
   as_of: "2026-07-25T03:00:00Z",
@@ -49,7 +50,10 @@ const result = {
     status: "failed",
     web_search_events: 0,
     opened_page_events: 0,
-    cited_sources_seen_in_events: 0,
+    codex_open_page_events: 0,
+    bridge_fetch_events: 0,
+    content_audit_passes: 0,
+    cited_sources_verified: 0,
     total_cited_sources: 0
   },
   limitations: []
@@ -64,15 +68,17 @@ process.stdout.write(`${JSON.stringify({
     action: { type: "search", query: "launch" }
   }
 })}\n`);
-process.stdout.write(`${JSON.stringify({
-  type: "item.completed",
-  item: {
-    id: "open_1",
-    type: "web_search",
-    query: "https://example.com/launch",
-    action: { type: "open_page", url: "https://example.com/launch" }
-  }
-})}\n`);
+if (!omitNativeOpen) {
+  process.stdout.write(`${JSON.stringify({
+    type: "item.completed",
+    item: {
+      id: "open_1",
+      type: "web_search",
+      query: "https://example.com/launch",
+      action: { type: "open_page", url: "https://example.com/launch" }
+    }
+  })}\n`);
+}
 process.stdout.write(`${JSON.stringify({
   type: "item.completed",
   item: { id: "message_1", type: "agent_message", text: JSON.stringify(result) }

@@ -6,6 +6,10 @@ export default defineConfig({
   target: "node20",
   platform: "node",
   bundle: true,
+  noExternal: [/.*/],
+  banner: {
+    js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
+  },
   splitting: false,
   sourcemap: false,
   clean: true,

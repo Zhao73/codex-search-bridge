@@ -1,7 +1,7 @@
 {
   "name": "codex-search-bridge",
   "version": "0.1.0",
-  "description": "Give any tool-capable model in Codex verified live-web research.",
+  "description": "Verified Codex live-web research for tool-capable external models.",
   "author": {
     "name": "Zhao73",
     "url": "https://github.com/Zhao73"
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Codex Search Bridge",
     "shortDescription": "Verified live-web research for external models",
-    "longDescription": "Let any MCP-capable external model running in Codex call an isolated Codex worker for live search, opened-page evidence, source URLs, publication dates, event dates, conflicts, and explicit uncertainty.",
+    "longDescription": "Expose an isolated Codex live-search worker to tool-capable external models, with opened-page evidence, source URLs, distinct publication and event dates, conflicts, and explicit uncertainty.",
     "developerName": "Zhao73",
     "category": "Productivity",
     "capabilities": [

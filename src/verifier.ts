@@ -38,6 +38,12 @@ export function verifyResearchResult(
       "Standard and deep research require open-page evidence.",
     );
   }
+  if (evidence.bridgeFetchEvents > 0 && evidence.contentAuditPasses < 1) {
+    throw new BridgeError(
+      "EVIDENCE_VERIFICATION_FAILED",
+      "Directly fetched page evidence requires a completed content-audit pass.",
+    );
+  }
 
   const verifiedSourceIds = new Set<string>();
   const sources = input.sources.map((source) => {
@@ -105,6 +111,17 @@ export function verifyResearchResult(
       `Ignored unknown Codex event types: ${evidence.unknownEventTypes.join(", ")}.`,
     );
   }
+  if (evidence.bridgeFetchFailures.length > 0) {
+    const failedSources = evidence.bridgeFetchFailures.map((failure) => {
+      const status =
+        failure.statusCode === undefined ? "" : `, HTTP ${failure.statusCode}`;
+      return `${failure.url} (${failure.reason}${status})`;
+    });
+    limitations = addUnique(
+      limitations,
+      `Bridge could not directly open ${evidence.bridgeFetchFailures.length} cited source page(s): ${failedSources.join("; ")}.`,
+    );
+  }
 
   const completeProvenance =
     verifiedSourceIds.size === sources.length && !claimWasDowngraded;
@@ -117,7 +134,10 @@ export function verifyResearchResult(
       status: completeProvenance ? "verified" : "partial",
       web_search_events: evidence.webSearchEvents,
       opened_page_events: evidence.openedPageEvents,
-      cited_sources_seen_in_events: verifiedSourceIds.size,
+      codex_open_page_events: evidence.codexOpenPageEvents,
+      bridge_fetch_events: evidence.bridgeFetchEvents,
+      content_audit_passes: evidence.contentAuditPasses,
+      cited_sources_verified: verifiedSourceIds.size,
       total_cited_sources: sources.length,
     },
     limitations,

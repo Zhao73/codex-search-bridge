@@ -16,7 +16,19 @@ Use `research_web` whenever the answer depends on current or externally referenc
 5. Add `recency_hours`, `date_from`, or `date_to` only when the request supplies or clearly implies that boundary.
 6. Keep `max_sources` between 3 and 12. Prefer 6 unless the task needs broader coverage.
 
-Do not claim to have searched unless the tool succeeds and returns a nonzero `web_search_events` count. For standard or deep work, require a nonzero `opened_page_events` count.
+Do not claim to have searched unless the tool succeeds and returns a nonzero `web_search_events` count. For standard or deep work, require a nonzero `opened_page_events` count. When describing provenance, distinguish native `codex_open_page_events` from restricted `bridge_fetch_events`; never describe a Bridge fetch as a Codex-native open action. If `bridge_fetch_events` is nonzero, require `content_audit_passes` to be nonzero.
+
+## Standard-function fallback for local providers
+
+Some local OpenAI-compatible providers accept ordinary function tools but reject Codex MCP `namespace` tools. When `research_web` is not present and `CODEX_SEARCH_BRIDGE_CLI_ONLY=1`, use the bundled compatibility runner. Do not use curl, another search engine, or a shell pipeline.
+
+1. Resolve `scripts/research.mjs` relative to the directory containing this `SKILL.md`. Never guess a repository path.
+2. Call `exec_command` with only `node <absolute-path-to-scripts/research.mjs>` and set `tty: true` so stdin remains open. Do not put the question or JSON on the shell command line. Wait for `CODEX_SEARCH_BRIDGE_READY` and retain the returned session ID.
+3. The process waits for one JSON line. Use `write_stdin` with that session ID, set `yield_time_ms: 30000`, and send the same `research_web` input object followed by one actual LF newline. In the tool-call JSON this is represented as `"chars": "{...}\\n"`; do not type two characters `\\` and `n` into the terminal. The runner defensively accepts one double-escaped final newline from providers that serialize it incorrectly.
+4. A nonempty `write_stdin` call can yield before research finishes. When you see `CODEX_SEARCH_BRIDGE_RESEARCHING_POLL_SESSION` or any running-session status, call `write_stdin` again on the same session with empty `chars` and `yield_time_ms: 300000`. Repeat until the command exits.
+5. Parse only the final JSON object printed after the process exits. Apply every evidence rule in this Skill. `CODEX_SEARCH_BRIDGE_READY`, `CODEX_SEARCH_BRIDGE_RESEARCHING_POLL_SESSION`, PTY input echo, and a running-session status are diagnostics, not research output. Never invent an answer or counters from those markers.
+
+The CLI runner starts the same isolated Codex research engine as MCP. This fallback exists only for provider protocol compatibility; it does not weaken evidence checks.
 
 ## Render the result in this conversation
 

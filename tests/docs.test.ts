@@ -28,6 +28,10 @@ describe("public documentation", () => {
         "doctor",
         "web_search_events",
         "opened_page_events",
+        "codex_open_page_events",
+        "bridge_fetch_events",
+        "content_audit_passes",
+        "cited_sources_verified",
         "published_at",
         "event_date",
         "retrieved_at",
@@ -51,6 +55,8 @@ describe("public documentation", () => {
     expect(security).toContain("Prompt injection");
     expect(security).toContain("shell=false");
     expect(security).toContain("CODEX_HOME");
+    expect(security).toContain("IANA IPv4 special-purpose registry");
+    expect(security).toContain("DNS rebinding");
     expect(policy).toContain("GitHub Security Advisory");
     expect(policy).not.toContain("TODO");
   });

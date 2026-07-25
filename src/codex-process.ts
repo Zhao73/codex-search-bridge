@@ -52,8 +52,14 @@ export function sanitizeDiagnostic(
   return sanitized;
 }
 
-function mapNonZeroExit(stderr: string): BridgeError {
-  if (/\b(?:401|unauthorized|not logged in|authentication required)\b/i.test(stderr)) {
+function mapNonZeroExit(output: string): BridgeError {
+  if (/invalid_json_schema|response_format.{0,80}schema/is.test(output)) {
+    return new BridgeError(
+      "INVALID_STRUCTURED_OUTPUT",
+      "Codex rejected the bundled research output schema.",
+    );
+  }
+  if (/\b(?:401|unauthorized|not logged in|authentication required)\b/i.test(output)) {
     return new BridgeError(
       "CODEX_AUTH_REQUIRED",
       "Codex authentication is required or has expired.",
@@ -62,7 +68,7 @@ function mapNonZeroExit(stderr: string): BridgeError {
   }
   if (
     /web search.{0,80}(?:disabled|unavailable|not allowed|forbidden)|workspace.{0,80}search.{0,80}(?:disabled|blocked)/is.test(
-      stderr,
+      output,
     )
   ) {
     return new BridgeError(
@@ -236,7 +242,7 @@ export function runCodexProcess(
       const stderr = Buffer.concat(stderrChunks).toString("utf8");
       const exitCode = code ?? 1;
       if (exitCode !== 0) {
-        reject(mapNonZeroExit(stderr));
+        reject(mapNonZeroExit(`${stdout}\n${stderr}`));
         return;
       }
       resolve({ stdout, stderr, exitCode });

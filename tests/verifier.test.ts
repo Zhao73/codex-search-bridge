@@ -38,7 +38,10 @@ const baseResult: ResearchResult = {
     status: "failed",
     web_search_events: 0,
     opened_page_events: 0,
-    cited_sources_seen_in_events: 0,
+    codex_open_page_events: 0,
+    bridge_fetch_events: 0,
+    content_audit_passes: 0,
+    cited_sources_verified: 0,
     total_cited_sources: 0,
   },
   limitations: [],
@@ -48,11 +51,16 @@ function evidence(overrides: Partial<CodexEvidence> = {}): CodexEvidence {
   return {
     webSearchEvents: 1,
     openedPageEvents: 1,
+    codexOpenPageEvents: 1,
+    bridgeFetchEvents: 0,
+    contentAuditPasses: 0,
     observedUrls: ["https://example.com/launch"],
+    openedUrls: ["https://example.com/launch"],
     redirects: new Map(),
     queries: ["launch"],
     unknownEventTypes: [],
     errorMessages: [],
+    bridgeFetchFailures: [],
     finalMessage: "done",
     ...overrides,
   };
@@ -79,6 +87,21 @@ describe("verifyResearchResult", () => {
     ).toThrowError(/open-page evidence/i);
   });
 
+  it("fails when direct page evidence was not reconciled by an audit pass", () => {
+    expect(() =>
+      verifyResearchResult(
+        baseResult,
+        evidence({
+          openedPageEvents: 1,
+          codexOpenPageEvents: 0,
+          bridgeFetchEvents: 1,
+          contentAuditPasses: 0,
+        }),
+        "standard",
+      ),
+    ).toThrowError(/content-audit/i);
+  });
+
   it("fails when all cited source URLs are unmatched", () => {
     expect(() =>
       verifyResearchResult(
@@ -100,7 +123,10 @@ describe("verifyResearchResult", () => {
       status: "verified",
       web_search_events: 1,
       opened_page_events: 1,
-      cited_sources_seen_in_events: 1,
+      codex_open_page_events: 1,
+      bridge_fetch_events: 0,
+      content_audit_passes: 0,
+      cited_sources_verified: 1,
       total_cited_sources: 1,
     });
     expect(verified.sources[0]?.provenance_verified).toBe(true);

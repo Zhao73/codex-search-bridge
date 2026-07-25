@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -18,7 +19,7 @@ import {
   type DoctorReport,
   runDoctor,
 } from "./doctor.js";
-import { toPublicBridgeError } from "./errors.js";
+import { BridgeError, toPublicBridgeError } from "./errors.js";
 import { ResearchRunner } from "./research-runner.js";
 
 const ToolInputSchema = z
@@ -130,12 +131,106 @@ export function createBridgeServer(
   return server;
 }
 
+export function createCliOnlyBridgeServer(): McpServer {
+  const server = new McpServer({
+    name: "codex-search-bridge",
+    version: PROJECT_VERSION,
+    title: PROJECT_NAME,
+  });
+
+  // McpServer installs the tools/list handler lazily on first registration.
+  // Registering and immediately disabling this sentinel makes tools/list return
+  // an intentional empty array instead of METHOD_NOT_FOUND, while ensuring no
+  // MCP namespace tool is sent to local providers that reject that tool type.
+  const sentinel = server.registerTool(
+    "__cli_only__",
+    {
+      description: "Internal disabled sentinel for CLI-only compatibility mode.",
+      inputSchema: {},
+    },
+    async () => ({ content: [{ type: "text", text: "disabled" }] }),
+  );
+  sentinel.disable();
+
+  return server;
+}
+
+async function readResearchInput(maxBytes = 16 * 1_024): Promise<unknown> {
+  let buffered = Buffer.alloc(0);
+  for await (const chunk of process.stdin) {
+    buffered = Buffer.concat([buffered, Buffer.from(chunk)]);
+    if (buffered.byteLength > maxBytes) {
+      throw new Error("Research input exceeds the 16 KiB CLI limit.");
+    }
+    const newline = buffered.indexOf(0x0a);
+    if (newline !== -1) {
+      buffered = buffered.subarray(0, newline);
+      break;
+    }
+  }
+  let text = buffered.toString("utf8").trim();
+  if (text.length === 0) {
+    throw new Error("Research input must be one JSON object followed by a newline.");
+  }
+
+  // Some local models double-escape the final LF when constructing a
+  // write_stdin call, so a PTY receives `...}\\n` followed by Enter. Accept
+  // exactly one such terminator. The JSON itself remains strict and the
+  // validated input must still be an object matching ResearchInputSchema.
+  if (text.endsWith("\\r\\n")) {
+    text = text.slice(0, -4).trimEnd();
+  } else if (text.endsWith("\\n")) {
+    text = text.slice(0, -2).trimEnd();
+  }
+  return JSON.parse(text);
+}
+
+async function runResearchCli(): Promise<void> {
+  try {
+    if (process.stdin.isTTY) {
+      process.stderr.write("CODEX_SEARCH_BRIDGE_READY\n");
+    }
+    let input: unknown;
+    try {
+      input = await readResearchInput();
+    } catch (error) {
+      throw new BridgeError(
+        "INVALID_INPUT",
+        "The CLI research input must be one valid JSON object followed by a newline.",
+        { cause: error },
+      );
+    }
+    if (process.stdin.isTTY) {
+      process.stderr.write("CODEX_SEARCH_BRIDGE_RESEARCHING_POLL_SESSION\n");
+    }
+    const result = await new ResearchRunner().run(input);
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  } catch (error) {
+    const publicError = toPublicBridgeError(error);
+    process.stdout.write(`${JSON.stringify(publicError, null, 2)}\n`);
+    process.exitCode = 1;
+  }
+}
+
 function isDirectExecution(): boolean {
   const entry = process.argv[1];
-  return entry !== undefined && resolve(entry) === fileURLToPath(import.meta.url);
+  if (entry === undefined) {
+    return false;
+  }
+  try {
+    return (
+      realpathSync(resolve(entry)) === realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
 }
 
 async function main(): Promise<void> {
+  if (process.argv.includes("--research-stdin")) {
+    await runResearchCli();
+    return;
+  }
   if (process.argv.includes("--doctor")) {
     const report = await runDoctor();
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
@@ -143,7 +238,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  const server = createBridgeServer();
+  const server =
+    process.env.CODEX_SEARCH_BRIDGE_CLI_ONLY === "1"
+      ? createCliOnlyBridgeServer()
+      : createBridgeServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(`${PROJECT_NAME} MCP server running on stdio.\n`);

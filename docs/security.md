@@ -16,11 +16,27 @@ The Bridge uses argument-array process creation with `shell=false`. User questio
 
 The public MCP input cannot override the Codex executable. A local administrator may set `CODEX_SEARCH_BRIDGE_CODEX_BIN` and `CODEX_SEARCH_BRIDGE_MODEL` before starting the plugin. These values are configuration authority, not model-controlled tool arguments.
 
-The child inherits an allowlist needed for cross-platform startup and authentication, including `PATH`, platform temp/system variables, `HOME`/`USERPROFILE`, optional `CODEX_HOME`, and optional OpenAI API configuration. It does not inherit arbitrary variables such as `NODE_OPTIONS`.
+In CLI-only compatibility mode, the packaged wrapper derives the server path relative to its own installed URL, invokes Node with `shell=false`, and inherits stdin/stdout directly. It accepts exactly one JSON line capped at 16 KiB. The research question and filters never become command-line arguments, executable paths, or environment-variable values; the same strict input schema is applied after parsing. The nested Codex process needs network access, so an outer command sandbox must either receive a per-command network approval or be configured with `sandbox_workspace_write.network_access=true`. The latter grants network access to every shell command in that outer task and should be paired with a trusted model and narrow workspace.
+
+The child inherits only a cross-platform allowlist such as `PATH`, platform system variables, locale, and optional OpenAI API configuration. `HOME`, `USERPROFILE`, `CODEX_HOME`, and all temp variables are replaced with fresh task-local roots. When API-key authentication is absent, only the existing Codex `auth.json` is copied with owner-only permissions. User configuration, Skills, plugins, MCP servers, caches, and arbitrary variables such as `NODE_OPTIONS` are not copied.
+
+## Restricted page fetcher
+
+The fetcher is an evidence adapter for Codex versions that do not expose URL-bearing page-open events. It cannot search and therefore cannot satisfy `web_search_events`.
+
+- Only credential-free `http:` and `https:` URLs on their default ports are accepted.
+- DNS results are checked before connection; any local, loopback, link-local, private, multicast, documentation, benchmark, reserved, IPv4-mapped-private, or configured translation range is rejected.
+- The validated address is pinned for the connection while the original hostname remains the HTTP Host and TLS SNI name, preventing DNS rebinding between validation and connection.
+- Every redirect is resolved and revalidated, with a maximum of five.
+- Requests send no Cookie or Authorization header, use identity encoding, time out after ten seconds, and retain at most 512 KiB.
+- Only successful HTML, XHTML, plain text, JSON, JSON-LD, or PDF responses count as page evidence. Individual failures remain visible in `limitations`.
+- HTML scripts, styles, templates, comments, SVG, and tags are removed; whitespace is compacted and at most 40,000 visible-text characters per page enter the audit prompt. PDF binaries are never decoded into prompt text.
+
+The address policy follows the [IANA IPv4 special-purpose registry](https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml), the [IANA IPv6 special-purpose registry](https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry.xhtml), and Node's documented [`BlockList`](https://nodejs.org/api/net.html#class-netblocklist) primitives. The implementation is intentionally conservative for IPv6 and permits only global-unicast space after explicit special-range exclusions.
 
 ## Prompt injection
 
-Prompt injection cannot be eliminated from web research. The fixed worker prompt declares snippets, pages, metadata, and embedded content to be untrusted evidence. It forbids following page instructions, executing downloaded code, reading local files, revealing credentials, logging in, or submitting forms.
+Prompt injection cannot be eliminated from web research. Both the research and audit prompts declare snippets, pages, metadata, fetched excerpts, and embedded content to be untrusted evidence. They forbid following page instructions, executing downloaded code, reading local files, revealing credentials, logging in, or submitting forms.
 
 The caller request is serialized as escaped JSON. `<`, `>`, and `&` are Unicode-escaped so caller text cannot close the request delimiter and visually inject a new XML-like instruction block.
 
@@ -54,7 +70,8 @@ MCP protocol frames are the only stdout output. Operational messages use stderr.
 - Codex or account policy can disable Web Search.
 - Pages behind authentication, payment, anti-bot controls, region restrictions, or outages may be inaccessible.
 - Event schemas can change; unknown events fail conservatively.
-- URL observation proves that Codex accessed a URL, not that every statement on that page is accurate.
+- URL observation or a successful restricted fetch proves page access and provenance, not that every statement on that page is accurate.
 - Nested Codex work consumes user quota and adds latency.
+- Provider protocol support and model behavior are separate: compatibility mode can avoid unsupported MCP `namespace` tools, but cannot force an outer model to invoke ordinary command tools.
 
 Report vulnerabilities through the private process in [../SECURITY.md](../SECURITY.md).

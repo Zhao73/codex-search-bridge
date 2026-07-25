@@ -27,7 +27,7 @@ describe("Codex plugin package", () => {
       name: "codex-search-bridge",
       version: "0.1.0",
       description:
-        "Give any tool-capable model in Codex verified live-web research.",
+        "Verified Codex live-web research for tool-capable external models.",
       author: { name: "Zhao73", url: "https://github.com/Zhao73" },
       repository: "https://github.com/Zhao73/codex-search-bridge",
       homepage: "https://github.com/Zhao73/codex-search-bridge#readme",

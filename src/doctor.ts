@@ -32,6 +32,9 @@ export const DoctorReportSchema = z
         available: z.boolean(),
         web_search_events: z.number().int().nonnegative(),
         opened_page_events: z.number().int().nonnegative(),
+        codex_open_page_events: z.number().int().nonnegative(),
+        bridge_fetch_events: z.number().int().nonnegative(),
+        content_audit_passes: z.number().int().nonnegative(),
       })
       .strict(),
     structured_output: z
@@ -100,6 +103,9 @@ function baseReport(
       available: false,
       web_search_events: 0,
       opened_page_events: 0,
+      codex_open_page_events: 0,
+      bridge_fetch_events: 0,
+      content_audit_passes: 0,
     },
     structured_output: { valid: false },
     remediations: [],
@@ -152,6 +158,9 @@ export async function runDoctor(
         result.verification.opened_page_events > 0,
       web_search_events: result.verification.web_search_events,
       opened_page_events: result.verification.opened_page_events,
+      codex_open_page_events: result.verification.codex_open_page_events,
+      bridge_fetch_events: result.verification.bridge_fetch_events,
+      content_audit_passes: result.verification.content_audit_passes,
     };
     report.structured_output.valid = true;
     report.status = report.live_search.available ? report.status === "degraded" ? "degraded" : "healthy" : "failed";

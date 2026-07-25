@@ -13,7 +13,8 @@
         "OPENAI_PROJECT_ID",
         "OPENAI_BASE_URL",
         "CODEX_SEARCH_BRIDGE_CODEX_BIN",
-        "CODEX_SEARCH_BRIDGE_MODEL"
+        "CODEX_SEARCH_BRIDGE_MODEL",
+        "CODEX_SEARCH_BRIDGE_CLI_ONLY"
       ]
     }
   }

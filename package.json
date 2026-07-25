@@ -1,7 +1,7 @@
 {
   "name": "codex-search-bridge",
   "version": "0.1.0",
-  "description": "Give any tool-capable model in Codex verified live-web research.",
+  "description": "Verified Codex live-web research for tool-capable external models.",
   "private": true,
   "type": "module",
   "engines": {

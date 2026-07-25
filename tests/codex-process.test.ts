@@ -80,6 +80,16 @@ describe("runCodexProcess", () => {
     });
   });
 
+  it("maps a Structured Outputs schema rejection from stdout", async () => {
+    await expect(
+      runCodexProcess(
+        nodeRequest(
+          "process.stdout.write(JSON.stringify({type:'error',message:'invalid_json_schema'}));process.exit(1)",
+        ),
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_STRUCTURED_OUTPUT" });
+  });
+
   it("maps a missing executable to CODEX_NOT_FOUND", async () => {
     await expect(
       runCodexProcess({

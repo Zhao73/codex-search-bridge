@@ -122,7 +122,10 @@ export const EvidenceSummarySchema = z
     status: OverallVerificationStatusSchema,
     web_search_events: z.number().int().nonnegative(),
     opened_page_events: z.number().int().nonnegative(),
-    cited_sources_seen_in_events: z.number().int().nonnegative(),
+    codex_open_page_events: z.number().int().nonnegative(),
+    bridge_fetch_events: z.number().int().nonnegative(),
+    content_audit_passes: z.number().int().nonnegative(),
+    cited_sources_verified: z.number().int().nonnegative(),
     total_cited_sources: z.number().int().nonnegative(),
   })
   .strict();
@@ -138,6 +141,25 @@ export const ResearchResultSchema = z
     limitations: z.array(z.string().min(1)),
   })
   .strict();
+
+function removeNullableOptionals(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(removeNullableOptionals);
+  }
+  if (typeof value !== "object" || value === null) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, child]) => child !== null)
+      .map(([key, child]) => [key, removeNullableOptionals(child)]),
+  );
+}
+
+export function normalizeWorkerResult(value: unknown): ResearchResult {
+  return ResearchResultSchema.parse(removeNullableOptionals(value));
+}
 
 export type ResearchWebInput = z.infer<typeof ResearchWebInputSchema>;
 export type ResearchQuery = z.infer<typeof ResearchQuerySchema>;

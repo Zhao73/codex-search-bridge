@@ -91,3 +91,27 @@ describe("stdio MCP server", () => {
     });
   });
 });
+
+describe("stdio MCP server in CLI-only compatibility mode", () => {
+  it("answers tools/list with an intentional empty tool list", async () => {
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: ["--import", "tsx", serverPath],
+      cwd: repositoryRoot,
+      env: {
+        ...stringEnvironment(),
+        CODEX_SEARCH_BRIDGE_CLI_ONLY: "1",
+      },
+      stderr: "pipe",
+    });
+    const client = new Client({ name: "cli-only-test-client", version: "1.0.0" });
+
+    try {
+      await client.connect(transport);
+      const response = await client.listTools();
+      expect(response.tools).toEqual([]);
+    } finally {
+      await client.close();
+    }
+  });
+});

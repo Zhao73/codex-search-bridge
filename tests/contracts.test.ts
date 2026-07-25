@@ -1,8 +1,12 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import {
   ResearchResultSchema,
   ResearchWebInputSchema,
+  normalizeWorkerResult,
 } from "../src/contracts.js";
 
 describe("ResearchWebInputSchema", () => {
@@ -114,7 +118,10 @@ describe("ResearchResultSchema", () => {
         status: "partial",
         web_search_events: 1,
         opened_page_events: 2,
-        cited_sources_seen_in_events: 1,
+        codex_open_page_events: 2,
+        bridge_fetch_events: 0,
+        content_audit_passes: 0,
+        cited_sources_verified: 1,
         total_cited_sources: 2,
       },
       limitations: ["One source URL was not present in the event stream."],
@@ -126,5 +133,88 @@ describe("ResearchResultSchema", () => {
       "unconfirmed",
       "conflicting",
     ]);
+  });
+
+  it("normalizes nullable worker optionals before public validation", () => {
+    const normalized = normalizeWorkerResult({
+      answer: "Result",
+      as_of: "2026-07-25T03:00:00Z",
+      query: {
+        question: "Question",
+        depth: "standard",
+        max_sources: 6,
+        recency_hours: null,
+        date_from: null,
+        date_to: null,
+        language: null,
+      },
+      claims: [
+        {
+          id: "C1",
+          claim: "Claim",
+          status: "unconfirmed",
+          confidence: "unknown",
+          event_date: null,
+          source_ids: [],
+          note: null,
+        },
+      ],
+      sources: [],
+      verification: {
+        status: "failed",
+        web_search_events: 0,
+        opened_page_events: 0,
+        codex_open_page_events: 0,
+        bridge_fetch_events: 0,
+        content_audit_passes: 0,
+        cited_sources_verified: 0,
+        total_cited_sources: 0,
+      },
+      limitations: [],
+    });
+
+    expect(normalized.query).toEqual({
+      question: "Question",
+      depth: "standard",
+      max_sources: 6,
+    });
+    expect(normalized.claims[0]).not.toHaveProperty("event_date");
+    expect(normalized.claims[0]).not.toHaveProperty("note");
+  });
+});
+
+describe("Codex output JSON Schema", () => {
+  it("marks every object property required for Structured Outputs", () => {
+    const schema = JSON.parse(
+      readFileSync(
+        fileURLToPath(
+          new URL("../schemas/research-result.schema.json", import.meta.url),
+        ),
+        "utf8",
+      ),
+    ) as unknown;
+
+    function inspect(value: unknown, path: string): void {
+      if (Array.isArray(value)) {
+        value.forEach((item, index) => inspect(item, `${path}[${index}]`));
+        return;
+      }
+      if (typeof value !== "object" || value === null) {
+        return;
+      }
+      const record = value as Record<string, unknown>;
+      if (record.type === "object") {
+        const properties = Object.keys(
+          (record.properties ?? {}) as Record<string, unknown>,
+        ).sort();
+        const required = [...((record.required ?? []) as string[])].sort();
+        expect(required, path).toEqual(properties);
+      }
+      Object.entries(record).forEach(([key, child]) =>
+        inspect(child, `${path}.${key}`),
+      );
+    }
+
+    inspect(schema, "schema");
   });
 });
